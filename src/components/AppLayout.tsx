@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Building2, LayoutDashboard, Plus } from "lucide-react";
+import { Building2, LayoutDashboard, Plus, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -8,6 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { to: "/", label: "Panel", icon: LayoutDashboard },
     { to: "/propiedades", label: "Propiedades", icon: Building2 },
+    { to: "/calendario", label: "Calendario", icon: CalendarDays },
   ];
 
   return (

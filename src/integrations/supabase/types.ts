@@ -147,6 +147,50 @@ export type Database = {
           },
         ]
       }
+      visits: {
+        Row: {
+          client_first_name: string
+          client_last_name: string
+          client_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          property_id: string
+          status: string
+          visit_date: string
+        }
+        Insert: {
+          client_first_name: string
+          client_last_name: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          property_id: string
+          status?: string
+          visit_date: string
+        }
+        Update: {
+          client_first_name?: string
+          client_last_name?: string
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          property_id?: string
+          status?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

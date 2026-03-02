@@ -1,14 +1,18 @@
+import { useState } from "react";
 import { usePropertyStats } from "@/hooks/usePropertyData";
 import { useProperties } from "@/hooks/usePropertyData";
-import { Building2, AlertTriangle, CheckCircle, TrendingUp } from "lucide-react";
+import { Building2, AlertTriangle, CheckCircle, TrendingUp, CalendarPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import StatusBadge from "@/components/StatusBadge";
 import { DOCUMENT_TYPES } from "@/lib/types";
+import ScheduleVisitModal from "@/components/ScheduleVisitModal";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = usePropertyStats();
   const { data: properties } = useProperties();
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -70,9 +74,15 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Panel de Control</h1>
-        <p className="text-muted-foreground mt-1">Resumen de tu cartera inmobiliaria</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Panel de Control</h1>
+          <p className="text-muted-foreground mt-1">Resumen de tu cartera inmobiliaria</p>
+        </div>
+        <Button onClick={() => setScheduleOpen(true)} size="lg">
+          <CalendarPlus className="w-5 h-5 mr-2" />
+          Agendar Visita
+        </Button>
       </div>
 
       {/* Stat Cards */}
@@ -156,6 +166,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+      <ScheduleVisitModal open={scheduleOpen} onOpenChange={setScheduleOpen} />
     </div>
   );
 }

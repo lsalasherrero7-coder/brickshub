@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import PropertyDocuments from "@/components/PropertyDocuments";
 import PropertyPhotos from "@/components/PropertyPhotos";
+import PropertyActivity from "@/components/PropertyActivity";
+import ScheduleVisitModal from "@/components/ScheduleVisitModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +39,7 @@ export default function PropertyForm() {
 
   const [form, setForm] = useState<Record<string, any>>({});
   const [initialized, setInitialized] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   // Initialize form from existing data
   if (existing && !initialized) {
@@ -137,6 +140,12 @@ export default function PropertyForm() {
         </div>
         <div className="flex items-center gap-2">
           {!isNew && (
+            <Button variant="outline" onClick={() => setScheduleOpen(true)}>
+              <CalendarPlus className="w-4 h-4 mr-2" />
+              Agendar Visita
+            </Button>
+          )}
+          {!isNew && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10">
@@ -172,6 +181,7 @@ export default function PropertyForm() {
           <TabsTrigger value="datos">Datos</TabsTrigger>
           {!isNew && <TabsTrigger value="fotos">Fotos</TabsTrigger>}
           {!isNew && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
+          {!isNew && <TabsTrigger value="actividad">Actividad</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="datos" className="mt-6 space-y-6">
@@ -336,7 +346,15 @@ export default function PropertyForm() {
             <PropertyDocuments propertyId={id!} />
           </TabsContent>
         )}
+
+        {!isNew && (
+          <TabsContent value="actividad" className="mt-6">
+            <PropertyActivity propertyId={id!} />
+          </TabsContent>
+        )}
       </Tabs>
+
+      {!isNew && <ScheduleVisitModal open={scheduleOpen} onOpenChange={setScheduleOpen} prefilledPropertyId={id} />}
     </div>
   );
 }

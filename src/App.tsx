@@ -7,6 +7,7 @@ import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import PropertyList from "@/pages/PropertyList";
 import PropertyForm from "@/pages/PropertyForm";
+import CalendarPage from "@/pages/CalendarPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/propiedades" element={<PropertyList />} />
             <Route path="/propiedades/nueva" element={<PropertyForm />} />
             <Route path="/propiedades/:id" element={<PropertyForm />} />
+            <Route path="/calendario" element={<CalendarPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

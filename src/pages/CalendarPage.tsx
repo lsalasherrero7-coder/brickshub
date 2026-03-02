@@ -1,15 +1,17 @@
 import { useState, useMemo } from "react";
-import { useVisits } from "@/hooks/useVisitData";
+import { useVisits, useUpdateVisitStatus } from "@/hooks/useVisitData";
 import { useProperties } from "@/hooks/usePropertyData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin } from "lucide-react";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay, startOfDay } from "date-fns";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle } from "lucide-react";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { VISIT_STATUSES } from "@/lib/types";
 import type { Visit } from "@/lib/types";
 import ScheduleVisitModal from "@/components/ScheduleVisitModal";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
   programada: "bg-info/80 text-info-foreground",
@@ -24,12 +26,23 @@ export default function CalendarPage() {
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const updateStatus = useUpdateVisitStatus();
 
   const propertyMap = useMemo(() => {
-    const map = new Map<string, string>();
-    (properties || []).forEach((p) => map.set(p.id, p.address));
+    const map = new Map<string, { address: string; id: string }>();
+    (properties || []).forEach((p) => map.set(p.id, { address: p.address, id: p.id }));
     return map;
   }, [properties]);
+
+  const handleStatusChange = async (id: string, status: string) => {
+    try {
+      await updateStatus.mutateAsync({ id, status });
+      toast.success(`Visita marcada como ${VISIT_STATUSES.find((s) => s.value === status)?.label}`);
+      setSelectedVisit((prev) => prev ? { ...prev, status } : null);
+    } catch (err: any) {
+      toast.error(err.message || "Error al actualizar");
+    }
+  };
 
   const visitsByDate = useMemo(() => {
     const map = new Map<string, Visit[]>();
@@ -159,33 +172,99 @@ export default function CalendarPage() {
           <DialogHeader>
             <DialogTitle className="font-display">Detalle de Visita</DialogTitle>
           </DialogHeader>
-          {selectedVisit && (
-            <div className="space-y-3 mt-2">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-muted-foreground" />
-                <span className="font-medium">{selectedVisit.client_first_name} {selectedVisit.client_last_name}</span>
+          {selectedVisit && (() => {
+            const prop = propertyMap.get(selectedVisit.property_id);
+            const statusColor: Record<string, string> = {
+              programada: "bg-info/10 text-info",
+              completada: "bg-success/10 text-success",
+              cancelada: "bg-destructive/10 text-destructive",
+            };
+            return (
+              <div className="space-y-4 mt-2">
+                {/* Property */}
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Propiedad</p>
+                    {prop ? (
+                      <Link to={`/propiedades/${prop.id}`} className="font-medium text-sm text-primary hover:underline">
+                        {prop.address}
+                      </Link>
+                    ) : (
+                      <span className="text-sm">—</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Client */}
+                <div className="flex items-start gap-2">
+                  <User className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Cliente</p>
+                    <p className="font-medium text-sm">{selectedVisit.client_first_name} {selectedVisit.client_last_name}</p>
+                  </div>
+                </div>
+
+                {selectedVisit.client_phone && (
+                  <div className="flex items-start gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Teléfono</p>
+                      <p className="text-sm">{selectedVisit.client_phone}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Date */}
+                <div className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Fecha y hora</p>
+                    <p className="text-sm capitalize">
+                      {format(new Date(selectedVisit.visit_date), "EEEE d 'de' MMMM yyyy, HH:mm", { locale: es })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {selectedVisit.notes && (
+                  <div className="flex items-start gap-2">
+                    <FileText className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Notas</p>
+                      <p className="text-sm italic">"{selectedVisit.notes}"</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status + change */}
+                <div className="border-t pt-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">Estado actual</p>
+                  <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${statusColor[selectedVisit.status] || ""}`}>
+                    {VISIT_STATUSES.find((s) => s.value === selectedVisit.status)?.label}
+                  </span>
+                  <p className="text-xs text-muted-foreground pt-1">Cambiar estado:</p>
+                  <div className="flex gap-1 flex-wrap">
+                    {selectedVisit.status !== "programada" && (
+                      <Button size="sm" variant="outline" className="text-info border-info/30 hover:bg-info/10 h-8 text-xs" onClick={() => handleStatusChange(selectedVisit.id, "programada")} disabled={updateStatus.isPending}>
+                        <Clock className="w-3.5 h-3.5 mr-1" /> Programada
+                      </Button>
+                    )}
+                    {selectedVisit.status !== "completada" && (
+                      <Button size="sm" variant="outline" className="text-success border-success/30 hover:bg-success/10 h-8 text-xs" onClick={() => handleStatusChange(selectedVisit.id, "completada")} disabled={updateStatus.isPending}>
+                        <CheckCircle className="w-3.5 h-3.5 mr-1" /> Completada
+                      </Button>
+                    )}
+                    {selectedVisit.status !== "cancelada" && (
+                      <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10 h-8 text-xs" onClick={() => handleStatusChange(selectedVisit.id, "cancelada")} disabled={updateStatus.isPending}>
+                        <XCircle className="w-3.5 h-3.5 mr-1" /> Cancelar
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
-              {selectedVisit.client_phone && (
-                <p className="text-sm text-muted-foreground">📞 {selectedVisit.client_phone}</p>
-              )}
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">
-                  {format(new Date(selectedVisit.visit_date), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">{propertyMap.get(selectedVisit.property_id) || "—"}</span>
-              </div>
-              {selectedVisit.notes && (
-                <p className="text-sm italic text-muted-foreground">"{selectedVisit.notes}"</p>
-              )}
-              <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${statusColors[selectedVisit.status] || ""}`}>
-                {VISIT_STATUSES.find((s) => s.value === selectedVisit.status)?.label}
-              </span>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

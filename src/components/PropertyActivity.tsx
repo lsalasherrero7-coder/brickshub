@@ -79,8 +79,20 @@ export default function PropertyActivity({ propertyId }: { propertyId: string })
                   </div>
                 </div>
 
-                {visit.status === "programada" && (
-                  <div className="flex gap-1 shrink-0">
+                <div className="flex gap-1 shrink-0 flex-wrap">
+                  {visit.status !== "programada" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-info border-info/30 hover:bg-info/10 h-8 text-xs"
+                      onClick={() => handleStatusChange(visit.id, "programada")}
+                      disabled={updateStatus.isPending}
+                    >
+                      <Clock className="w-3.5 h-3.5 mr-1" />
+                      Programada
+                    </Button>
+                  )}
+                  {visit.status !== "completada" && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -91,6 +103,8 @@ export default function PropertyActivity({ propertyId }: { propertyId: string })
                       <CheckCircle className="w-3.5 h-3.5 mr-1" />
                       Completada
                     </Button>
+                  )}
+                  {visit.status !== "cancelada" && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -101,8 +115,8 @@ export default function PropertyActivity({ propertyId }: { propertyId: string })
                       <XCircle className="w-3.5 h-3.5 mr-1" />
                       Cancelar
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -1,0 +1,232 @@
+import { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useContactTasks, useCreateContactTask, useUpdateContactTaskStatus } from "@/hooks/useContactData";
+import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText } from "lucide-react";
+
+export default function ContactDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const { data: contact, isLoading } = useContact(id);
+  const { data: notes } = useContactNotes(id);
+  const { data: tasks } = useContactTasks(id);
+  const createNote = useCreateContactNote();
+  const updateNote = useUpdateContactNote();
+  const createTask = useCreateContactTask();
+  const updateTaskStatus = useUpdateContactTaskStatus();
+
+  const [newNote, setNewNote] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteContent, setEditingNoteContent] = useState("");
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ title: "", description: "", due_date: "", due_time: "10:00" });
+
+  if (isLoading) {
+    return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;
+  }
+
+  if (!contact) {
+    return <div className="text-center py-12 text-muted-foreground">Contacto no encontrado</div>;
+  }
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    await createNote.mutateAsync({ contact_id: contact.id, content: newNote });
+    setNewNote("");
+    toast({ title: "Nota añadida" });
+  };
+
+  const handleUpdateNote = async (noteId: string) => {
+    await updateNote.mutateAsync({ id: noteId, content: editingNoteContent, contact_id: contact.id });
+    setEditingNoteId(null);
+    toast({ title: "Nota actualizada" });
+  };
+
+  const handleAddTask = async () => {
+    if (!newTask.title.trim() || !newTask.due_date) return;
+    const dueDateTime = `${newTask.due_date}T${newTask.due_time}:00`;
+    await createTask.mutateAsync({ contact_id: contact.id, title: newTask.title, description: newTask.description || undefined, due_date: dueDateTime });
+    setTaskDialogOpen(false);
+    setNewTask({ title: "", description: "", due_date: "", due_time: "10:00" });
+    toast({ title: "Tarea creada", description: "Se ha añadido al calendario" });
+  };
+
+  const handleToggleTask = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "pendiente" ? "completada" : "pendiente";
+    await updateTaskStatus.mutateAsync({ id: taskId, status: newStatus });
+  };
+
+  const statusLabel = LEAD_STATUSES.find((s) => s.value === contact.lead_status)?.label || contact.lead_status;
+  const portalLabel = SOURCE_PORTALS.find((s) => s.value === contact.source_portal)?.label || contact.source_portal;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/contactos")}>
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-display font-bold text-foreground">{contact.name}</h1>
+          <p className="text-muted-foreground text-sm">Detalle del contacto</p>
+        </div>
+      </div>
+
+      {/* Main Info Card */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex items-center gap-3">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <div><p className="text-xs text-muted-foreground">Nombre</p><p className="font-medium">{contact.name}</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Phone className="w-4 h-4 text-muted-foreground" />
+              <div><p className="text-xs text-muted-foreground">Teléfono</p><p className="font-medium">{contact.phone || "—"}</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <div><p className="text-xs text-muted-foreground">Dirección</p><p className="font-medium">{contact.address || "—"}</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Globe className="w-4 h-4 text-muted-foreground" />
+              <div><p className="text-xs text-muted-foreground">Portal</p><p className="font-medium">{portalLabel}</p></div>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Estado</p>
+              <Badge>{statusLabel}</Badge>
+            </div>
+            {contact.property_id && (
+              <div className="flex items-center gap-3">
+                <Building2 className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Propiedad vinculada</p>
+                  <Link to={`/propiedades/${contact.property_id}`} className="text-primary hover:underline text-sm font-medium">Ver propiedad</Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
+      <Tabs defaultValue="notas">
+        <TabsList>
+          <TabsTrigger value="notas"><FileText className="w-4 h-4 mr-1" />Notas</TabsTrigger>
+          <TabsTrigger value="tareas"><CalendarIcon className="w-4 h-4 mr-1" />Tareas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="notas">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Notas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Textarea value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Escribe una nota..." className="flex-1" />
+                <Button onClick={handleAddNote} disabled={!newNote.trim()}>Añadir</Button>
+              </div>
+              {notes && notes.length > 0 ? (
+                <div className="space-y-3">
+                  {notes.map((note) => (
+                    <div key={note.id} className="border rounded-lg p-3">
+                      {editingNoteId === note.id ? (
+                        <div className="space-y-2">
+                          <Textarea value={editingNoteContent} onChange={(e) => setEditingNoteContent(e.target.value)} />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleUpdateNote(note.id)}>Guardar</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingNoteId(null)}>Cancelar</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(note.updated_at), "dd MMM yyyy HH:mm", { locale: es })}
+                            </p>
+                            <Button size="sm" variant="ghost" onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}>Editar</Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">Sin notas aún</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tareas">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Tareas</CardTitle>
+              <Button size="sm" onClick={() => setTaskDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-1" />Nueva Tarea
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {tasks && tasks.length > 0 ? (
+                <div className="space-y-2">
+                  {tasks.map((task) => (
+                    <div key={task.id} className={`flex items-start gap-3 border rounded-lg p-3 ${task.status === "completada" ? "opacity-60" : ""}`}>
+                      <Checkbox checked={task.status === "completada"} onCheckedChange={() => handleToggleTask(task.id, task.status)} className="mt-0.5" />
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium ${task.status === "completada" ? "line-through" : ""}`}>{task.title}</p>
+                        {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <CalendarIcon className="w-3 h-3" />
+                          {format(new Date(task.due_date), "dd MMM yyyy HH:mm", { locale: es })}
+                        </p>
+                      </div>
+                      <Badge variant={task.status === "completada" ? "secondary" : "outline"} className="text-xs">
+                        {TASK_STATUSES.find((s) => s.value === task.status)?.label || task.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">Sin tareas</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* New Task Dialog */}
+      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Nueva Tarea</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Título *</Label><Input value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} /></div>
+            <div><Label>Descripción</Label><Textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Fecha *</Label><Input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} /></div>
+              <div><Label>Hora</Label><Input type="time" value={newTask.due_time} onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })} /></div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleAddTask} disabled={!newTask.title.trim() || !newTask.due_date}>Crear Tarea</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

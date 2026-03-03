@@ -8,6 +8,9 @@ import Dashboard from "@/pages/Dashboard";
 import PropertyList from "@/pages/PropertyList";
 import PropertyForm from "@/pages/PropertyForm";
 import CalendarPage from "@/pages/CalendarPage";
+import CaptacionPage from "@/pages/CaptacionPage";
+import ContactosPage from "@/pages/ContactosPage";
+import ContactDetailPage from "@/pages/ContactDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +27,9 @@ const App = () => (
             <Route path="/propiedades" element={<PropertyList />} />
             <Route path="/propiedades/nueva" element={<PropertyForm />} />
             <Route path="/propiedades/:id" element={<PropertyForm />} />
+            <Route path="/captacion" element={<CaptacionPage />} />
+            <Route path="/contactos" element={<ContactosPage />} />
+            <Route path="/contactos/:id" element={<ContactDetailPage />} />
             <Route path="/calendario" element={<CalendarPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

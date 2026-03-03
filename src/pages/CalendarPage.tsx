@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { useVisits, useUpdateVisitStatus } from "@/hooks/useVisitData";
 import { useProperties } from "@/hooks/usePropertyData";
+import { useAllContactTasks } from "@/hooks/useContactData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { VISIT_STATUSES } from "@/lib/types";
@@ -22,6 +23,7 @@ const statusColors: Record<string, string> = {
 export default function CalendarPage() {
   const { data: visits } = useVisits();
   const { data: properties } = useProperties();
+  const { data: contactTasks } = useAllContactTasks();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
@@ -53,6 +55,16 @@ export default function CalendarPage() {
     });
     return map;
   }, [visits]);
+
+  const tasksByDate = useMemo(() => {
+    const map = new Map<string, any[]>();
+    (contactTasks || []).forEach((t: any) => {
+      const key = format(new Date(t.due_date), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    });
+    return map;
+  }, [contactTasks]);
 
   const navigatePrev = () => setCurrentDate((d) => view === "month" ? addMonths(d, -1) : addWeeks(d, -1));
   const navigateNext = () => setCurrentDate((d) => view === "month" ? addMonths(d, 1) : addWeeks(d, 1));
@@ -130,6 +142,7 @@ export default function CalendarPage() {
             {calendarDays.map((day, i) => {
               const key = format(day, "yyyy-MM-dd");
               const dayVisits = visitsByDate.get(key) || [];
+              const dayTasks = tasksByDate.get(key) || [];
               const isToday = isSameDay(day, new Date());
               const isCurrentMonth = isSameMonth(day, currentDate);
 
@@ -158,6 +171,16 @@ export default function CalendarPage() {
                     {dayVisits.length > (view === "week" ? 10 : 3) && (
                       <p className="text-[10px] text-muted-foreground px-1">+{dayVisits.length - (view === "week" ? 10 : 3)} más</p>
                     )}
+                    {dayTasks.slice(0, view === "week" ? 5 : 2).map((t: any) => (
+                      <Link
+                        key={t.id}
+                        to={`/contactos/${t.contact_id}`}
+                        className={`w-full block text-[10px] leading-tight px-1.5 py-0.5 rounded truncate ${t.status === "completada" ? "bg-muted text-muted-foreground line-through" : "bg-accent/20 text-accent-foreground"}`}
+                      >
+                        <ListTodo className="w-2.5 h-2.5 inline mr-0.5" />
+                        {format(new Date(t.due_date), "HH:mm")} {t.title}
+                      </Link>
+                    ))}
                   </div>
                 </div>
               );

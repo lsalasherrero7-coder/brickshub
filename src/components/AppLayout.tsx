@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Building2, LayoutDashboard, Plus, CalendarDays } from "lucide-react";
+import { Building2, LayoutDashboard, Plus, CalendarDays, Target, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -8,12 +8,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { to: "/", label: "Panel", icon: LayoutDashboard },
     { to: "/propiedades", label: "Propiedades", icon: Building2 },
+    { to: "/captacion", label: "Captación", icon: Target },
+    { to: "/contactos", label: "Contactos", icon: Users },
     { to: "/calendario", label: "Calendario", icon: CalendarDays },
   ];
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
         <div className="p-6 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-3">
@@ -28,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.to || 
+            const isActive = location.pathname === item.to ||
               (item.to !== "/" && location.pathname.startsWith(item.to));
             return (
               <Link
@@ -55,8 +56,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
       </aside>
-
-      {/* Main content */}
       <main className="flex-1 overflow-auto">
         <div className="p-8">{children}</div>
       </main>

@@ -14,6 +14,192 @@ export type Database = {
   }
   public: {
     Tables: {
+      contact_notes: {
+        Row: {
+          contact_id: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_tasks: {
+        Row: {
+          contact_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          address: string | null
+          agent_id: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          lead_status: string
+          name: string
+          phone: string | null
+          property_id: string | null
+          source_portal: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          agent_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          lead_status?: string
+          name: string
+          phone?: string | null
+          property_id?: string | null
+          source_portal?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          agent_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          lead_status?: string
+          name?: string
+          phone?: string | null
+          property_id?: string | null
+          source_portal?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          address: string
+          advertiser_type: string
+          agent_id: string | null
+          created_at: string
+          external_portal_id: string | null
+          id: string
+          lead_status: string
+          listing_url: string | null
+          name: string | null
+          phone: string | null
+          property_id: string | null
+          source_portal: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          advertiser_type?: string
+          agent_id?: string | null
+          created_at?: string
+          external_portal_id?: string | null
+          id?: string
+          lead_status?: string
+          listing_url?: string | null
+          name?: string | null
+          phone?: string | null
+          property_id?: string | null
+          source_portal?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          advertiser_type?: string
+          agent_id?: string | null
+          created_at?: string
+          external_portal_id?: string | null
+          id?: string
+          lead_status?: string
+          listing_url?: string | null
+          name?: string | null
+          phone?: string | null
+          property_id?: string | null
+          source_portal?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       properties: {
         Row: {
           address: string

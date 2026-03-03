@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { usePropertyStats } from "@/hooks/usePropertyData";
 import { useProperties } from "@/hooks/usePropertyData";
-import { Building2, AlertTriangle, CheckCircle, TrendingUp, CalendarPlus } from "lucide-react";
+import { Building2, AlertTriangle, CheckCircle, TrendingUp, CalendarPlus, Euro, Receipt } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -29,34 +29,51 @@ export default function Dashboard() {
     );
   }
 
+  const formatEuro = (value: number) =>
+    new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
+
   const statCards = [
     {
       title: "Total Propiedades",
-      value: stats?.total || 0,
+      value: String(stats?.total || 0),
       icon: Building2,
       color: "text-primary",
       bg: "bg-primary/10",
     },
     {
       title: "Disponibles",
-      value: stats?.byStatus.disponible || 0,
+      value: String(stats?.byStatus.disponible || 0),
       icon: CheckCircle,
       color: "text-success",
       bg: "bg-success/10",
     },
     {
       title: "Reservadas",
-      value: stats?.byStatus.reservado || 0,
+      value: String(stats?.byStatus.reservado || 0),
       icon: TrendingUp,
       color: "text-warning",
       bg: "bg-warning/10",
     },
     {
       title: "Doc. Incompleta",
-      value: stats?.incompleteCount || 0,
+      value: String(stats?.incompleteCount || 0),
       icon: AlertTriangle,
       color: "text-destructive",
       bg: "bg-destructive/10",
+    },
+    {
+      title: "Comisión Potencial",
+      value: formatEuro(stats?.potentialCommission || 0),
+      icon: Euro,
+      color: "text-primary",
+      bg: "bg-primary/10",
+    },
+    {
+      title: `Facturación ${new Date().getFullYear()}`,
+      value: formatEuro(stats?.yearlyRevenue || 0),
+      icon: Receipt,
+      color: "text-success",
+      bg: "bg-success/10",
     },
   ];
 
@@ -86,7 +103,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((card) => (
           <Card key={card.title} className="border shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">

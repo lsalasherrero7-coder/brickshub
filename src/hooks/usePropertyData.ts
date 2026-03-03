@@ -218,7 +218,7 @@ export function usePropertyStats() {
     queryFn: async () => {
       const { data: properties, error } = await supabase
         .from("properties")
-        .select("id, status");
+        .select("id, status, listing_price, commission_pct, updated_at");
       if (error) throw error;
 
       const { data: docs, error: docsError } = await supabase
@@ -251,7 +251,18 @@ export function usePropertyStats() {
         return requiredDocs.some((d) => !propertyDocs.has(d));
       });
 
-      return { total, byStatus, incompleteCount: incompleteProperties.length, incompleteProperties, docsMap, requiredDocs };
+      // Comisión potencial: commission from disponible + reservado
+      const potentialCommission = properties
+        .filter((p) => p.status === "disponible" || p.status === "reservado")
+        .reduce((sum, p) => sum + ((p.listing_price || 0) * (p.commission_pct || 3) / 100), 0);
+
+      // Facturación current year: commission from vendido closed this year
+      const currentYear = new Date().getFullYear();
+      const yearlyRevenue = properties
+        .filter((p) => p.status === "vendido" && new Date(p.updated_at).getFullYear() === currentYear)
+        .reduce((sum, p) => sum + ((p.listing_price || 0) * (p.commission_pct || 3) / 100), 0);
+
+      return { total, byStatus, incompleteCount: incompleteProperties.length, incompleteProperties, docsMap, requiredDocs, potentialCommission, yearlyRevenue };
     },
   });
 }

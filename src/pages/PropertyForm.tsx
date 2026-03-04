@@ -1,7 +1,9 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProperty, useCreateProperty, useUpdateProperty, useDeleteProperty } from "@/hooks/usePropertyData";
-import { PROPERTY_TYPES, PROPERTY_STATUSES } from "@/lib/types";
+import { PROPERTY_TYPES, PROPERTY_STATUSES, PAMPLONA_ZONES } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,21 +18,67 @@ import PropertyPhotos from "@/components/PropertyPhotos";
 import PropertyActivity from "@/components/PropertyActivity";
 import ScheduleVisitModal from "@/components/ScheduleVisitModal";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+async function syncOwnerToContacts(propertyId: string, ownerName: string | null, ownerPhone: string | null, ownerEmail: string | null, address: string) {
+  if (!ownerName) return;
+
+  // Check if contact with same phone already exists
+  if (ownerPhone) {
+    const { data: existing } = await supabase
+      .from("contacts")
+      .select("id, property_id")
+      .eq("phone", ownerPhone)
+      .maybeSingle();
+
+    if (existing) {
+      // Link property and update info
+      await supabase.from("contacts").update({
+        name: ownerName,
+        email: ownerEmail,
+        property_id: propertyId,
+        address,
+        contact_type: "vendedor",
+      }).eq("id", existing.id);
+      return;
+    }
+  }
+
+  // Check if contact already linked to this property
+  const { data: linkedContact } = await supabase
+    .from("contacts")
+    .select("id")
+    .eq("property_id", propertyId)
+    .eq("contact_type", "vendedor")
+    .maybeSingle();
+
+  if (linkedContact) {
+    await supabase.from("contacts").update({
+      name: ownerName,
+      phone: ownerPhone,
+      email: ownerEmail,
+      address,
+    }).eq("id", linkedContact.id);
+  } else {
+    await supabase.from("contacts").insert({
+      name: ownerName,
+      phone: ownerPhone,
+      email: ownerEmail,
+      address,
+      contact_type: "vendedor",
+      property_id: propertyId,
+      source_portal: "manual",
+    });
+  }
+}
 
 export default function PropertyForm() {
   const { id } = useParams();
   const isNew = !id || id === "nueva";
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: existing, isLoading } = useProperty(isNew ? undefined : id);
 
   const createMutation = useCreateProperty();
@@ -41,7 +89,6 @@ export default function PropertyForm() {
   const [initialized, setInitialized] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
 
-  // Initialize form from existing data
   if (existing && !initialized) {
     setForm(existing);
     setInitialized(true);
@@ -58,46 +105,42 @@ export default function PropertyForm() {
     }
 
     try {
+      const propertyData = {
+        address: form.address,
+        surface_area: form.surface_area ? Number(form.surface_area) : null,
+        bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
+        bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
+        floor: form.floor || null,
+        property_type: form.property_type || "piso",
+        listing_price: form.listing_price ? Number(form.listing_price) : null,
+        min_price: form.min_price ? Number(form.min_price) : null,
+        commission_pct: form.commission_pct ? Number(form.commission_pct) : 3,
+        status: form.status || "disponible",
+        owner_name: form.owner_name || null,
+        owner_phone: form.owner_phone || null,
+        owner_email: form.owner_email || null,
+        owner_dni: form.owner_dni || null,
+        notes: form.notes || null,
+        zone: form.zone || null,
+      };
+
+      let savedPropertyId: string;
+
       if (isNew) {
-        const result = await createMutation.mutateAsync({
-          address: form.address,
-          surface_area: form.surface_area ? Number(form.surface_area) : null,
-          bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
-          bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
-          floor: form.floor || null,
-          property_type: form.property_type || "piso",
-          listing_price: form.listing_price ? Number(form.listing_price) : null,
-          min_price: form.min_price ? Number(form.min_price) : null,
-          commission_pct: form.commission_pct ? Number(form.commission_pct) : 3,
-          status: form.status || "disponible",
-          owner_name: form.owner_name || null,
-          owner_phone: form.owner_phone || null,
-          owner_email: form.owner_email || null,
-          owner_dni: form.owner_dni || null,
-          notes: form.notes || null,
-        });
+        const result = await createMutation.mutateAsync(propertyData);
+        savedPropertyId = result.id;
         toast.success("Propiedad creada correctamente");
         navigate(`/propiedades/${result.id}`);
       } else {
-        await updateMutation.mutateAsync({
-          id: id!,
-          address: form.address,
-          surface_area: form.surface_area ? Number(form.surface_area) : null,
-          bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
-          bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
-          floor: form.floor || null,
-          property_type: form.property_type || "piso",
-          listing_price: form.listing_price ? Number(form.listing_price) : null,
-          min_price: form.min_price ? Number(form.min_price) : null,
-          commission_pct: form.commission_pct ? Number(form.commission_pct) : 3,
-          status: form.status || "disponible",
-          owner_name: form.owner_name || null,
-          owner_phone: form.owner_phone || null,
-          owner_email: form.owner_email || null,
-          owner_dni: form.owner_dni || null,
-          notes: form.notes || null,
-        });
+        await updateMutation.mutateAsync({ id: id!, ...propertyData });
+        savedPropertyId = id!;
         toast.success("Propiedad actualizada correctamente");
+      }
+
+      // Auto-sync owner to contacts
+      if (form.owner_name) {
+        await syncOwnerToContacts(savedPropertyId, form.owner_name, form.owner_phone, form.owner_email, form.address);
+        queryClient.invalidateQueries({ queryKey: ["contacts"] });
       }
     } catch (err: any) {
       toast.error(err.message || "Error al guardar");
@@ -185,173 +228,92 @@ export default function PropertyForm() {
         </TabsList>
 
         <TabsContent value="datos" className="mt-6 space-y-6">
-          {/* Basic data */}
           <Card>
-            <CardHeader>
-              <CardTitle className="font-display text-base">Datos Básicos</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="font-display text-base">Datos Básicos</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <Label>Dirección completa *</Label>
-                <Input
-                  value={form.address || ""}
-                  onChange={(e) => updateField("address", e.target.value)}
-                  placeholder="Calle, número, piso, ciudad..."
-                />
+                <Input value={form.address || ""} onChange={(e) => updateField("address", e.target.value)} placeholder="Calle, número, piso, ciudad..." />
               </div>
               <div>
                 <Label>Tipo de propiedad</Label>
                 <Select value={form.property_type || "piso"} onValueChange={(v) => updateField("property_type", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PROPERTY_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
+                  <SelectContent>{PROPERTY_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Estado</Label>
                 <Select value={form.status || "disponible"} onValueChange={(v) => updateField("status", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PROPERTY_STATUSES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
+                  <SelectContent>{PROPERTY_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Zona</Label>
+                <Select value={form.zone || ""} onValueChange={(v) => updateField("zone", v)}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar zona" /></SelectTrigger>
+                  <SelectContent>{PAMPLONA_ZONES.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Superficie (m²)</Label>
-                <Input
-                  type="number"
-                  value={form.surface_area || ""}
-                  onChange={(e) => updateField("surface_area", e.target.value)}
-                />
+                <Input type="number" value={form.surface_area || ""} onChange={(e) => updateField("surface_area", e.target.value)} />
               </div>
               <div>
                 <Label>Planta</Label>
-                <Input
-                  value={form.floor || ""}
-                  onChange={(e) => updateField("floor", e.target.value)}
-                  placeholder="Ej: 3ª, Bajo, Ático"
-                />
+                <Input value={form.floor || ""} onChange={(e) => updateField("floor", e.target.value)} placeholder="Ej: 3ª, Bajo, Ático" />
               </div>
               <div>
                 <Label>Dormitorios</Label>
-                <Input
-                  type="number"
-                  value={form.bedrooms ?? ""}
-                  onChange={(e) => updateField("bedrooms", e.target.value)}
-                />
+                <Input type="number" value={form.bedrooms ?? ""} onChange={(e) => updateField("bedrooms", e.target.value)} />
               </div>
               <div>
                 <Label>Baños</Label>
-                <Input
-                  type="number"
-                  value={form.bathrooms ?? ""}
-                  onChange={(e) => updateField("bathrooms", e.target.value)}
-                />
+                <Input type="number" value={form.bathrooms ?? ""} onChange={(e) => updateField("bathrooms", e.target.value)} />
               </div>
             </CardContent>
           </Card>
 
-          {/* Economic data */}
           <Card>
-            <CardHeader>
-              <CardTitle className="font-display text-base">Datos Económicos</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="font-display text-base">Datos Económicos</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label>Precio de venta (€)</Label>
-                <Input
-                  type="number"
-                  value={form.listing_price || ""}
-                  onChange={(e) => updateField("listing_price", e.target.value)}
-                />
+                <Input type="number" value={form.listing_price || ""} onChange={(e) => updateField("listing_price", e.target.value)} />
               </div>
               <div>
                 <Label>Precio mínimo (€)</Label>
-                <Input
-                  type="number"
-                  value={form.min_price || ""}
-                  onChange={(e) => updateField("min_price", e.target.value)}
-                />
+                <Input type="number" value={form.min_price || ""} onChange={(e) => updateField("min_price", e.target.value)} />
               </div>
               <div>
                 <Label>Comisión agencia (%)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={form.commission_pct ?? 3}
-                  onChange={(e) => updateField("commission_pct", e.target.value)}
-                />
+                <Input type="number" step="0.1" value={form.commission_pct ?? 3} onChange={(e) => updateField("commission_pct", e.target.value)} />
               </div>
             </CardContent>
           </Card>
 
-          {/* Owner */}
           <Card>
-            <CardHeader>
-              <CardTitle className="font-display text-base">Propietario</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="font-display text-base">Propietario</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Nombre</Label>
-                <Input value={form.owner_name || ""} onChange={(e) => updateField("owner_name", e.target.value)} />
-              </div>
-              <div>
-                <Label>DNI/NIE</Label>
-                <Input value={form.owner_dni || ""} onChange={(e) => updateField("owner_dni", e.target.value)} />
-              </div>
-              <div>
-                <Label>Teléfono</Label>
-                <Input value={form.owner_phone || ""} onChange={(e) => updateField("owner_phone", e.target.value)} />
-              </div>
-              <div>
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={form.owner_email || ""}
-                  onChange={(e) => updateField("owner_email", e.target.value)}
-                />
-              </div>
+              <div><Label>Nombre</Label><Input value={form.owner_name || ""} onChange={(e) => updateField("owner_name", e.target.value)} /></div>
+              <div><Label>DNI/NIE</Label><Input value={form.owner_dni || ""} onChange={(e) => updateField("owner_dni", e.target.value)} /></div>
+              <div><Label>Teléfono</Label><Input value={form.owner_phone || ""} onChange={(e) => updateField("owner_phone", e.target.value)} /></div>
+              <div><Label>Email</Label><Input type="email" value={form.owner_email || ""} onChange={(e) => updateField("owner_email", e.target.value)} /></div>
             </CardContent>
           </Card>
 
-          {/* Notes */}
           <Card>
-            <CardHeader>
-              <CardTitle className="font-display text-base">Notas Internas</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="font-display text-base">Notas Internas</CardTitle></CardHeader>
             <CardContent>
-              <Textarea
-                rows={4}
-                value={form.notes || ""}
-                onChange={(e) => updateField("notes", e.target.value)}
-                placeholder="Observaciones internas sobre la propiedad..."
-              />
+              <Textarea rows={4} value={form.notes || ""} onChange={(e) => updateField("notes", e.target.value)} placeholder="Observaciones internas sobre la propiedad..." />
             </CardContent>
           </Card>
         </TabsContent>
 
-        {!isNew && (
-          <TabsContent value="fotos" className="mt-6">
-            <PropertyPhotos propertyId={id!} />
-          </TabsContent>
-        )}
-
-        {!isNew && (
-          <TabsContent value="documentos" className="mt-6">
-            <PropertyDocuments propertyId={id!} />
-          </TabsContent>
-        )}
-
-        {!isNew && (
-          <TabsContent value="actividad" className="mt-6">
-            <PropertyActivity propertyId={id!} />
-          </TabsContent>
-        )}
+        {!isNew && <TabsContent value="fotos" className="mt-6"><PropertyPhotos propertyId={id!} /></TabsContent>}
+        {!isNew && <TabsContent value="documentos" className="mt-6"><PropertyDocuments propertyId={id!} /></TabsContent>}
+        {!isNew && <TabsContent value="actividad" className="mt-6"><PropertyActivity propertyId={id!} /></TabsContent>}
       </Tabs>
 
       {!isNew && <ScheduleVisitModal open={scheduleOpen} onOpenChange={setScheduleOpen} prefilledPropertyId={id} />}

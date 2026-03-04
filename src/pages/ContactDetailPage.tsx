@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useContactTasks, useCreateContactTask, useUpdateContactTaskStatus } from "@/hooks/useContactData";
-import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES } from "@/lib/types";
+import { useContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useBuyerProfile, useSuggestedProperties } from "@/hooks/useContactData";
+import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES, CONTACT_TYPES, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText } from "lucide-react";
+import StatusBadge from "@/components/StatusBadge";
+import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart } from "lucide-react";
 
 export default function ContactDetailPage() {
   const { id } = useParams();
@@ -25,6 +26,10 @@ export default function ContactDetailPage() {
   const { data: contact, isLoading } = useContact(id);
   const { data: notes } = useContactNotes(id);
   const { data: tasks } = useContactTasks(id);
+  const { data: buyerProfile } = useBuyerProfile(id);
+  const { data: suggestedProperties } = useSuggestedProperties(
+    contact?.contact_type === "comprador" ? id : undefined
+  );
   const createNote = useCreateContactNote();
   const updateNote = useUpdateContactNote();
   const createTask = useCreateContactTask();
@@ -73,6 +78,9 @@ export default function ContactDetailPage() {
 
   const statusLabel = LEAD_STATUSES.find((s) => s.value === contact.lead_status)?.label || contact.lead_status;
   const portalLabel = SOURCE_PORTALS.find((s) => s.value === contact.source_portal)?.label || contact.source_portal;
+  const isBuyer = contact.contact_type === "comprador";
+
+  const formatEuro = (v: number) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v);
 
   return (
     <div className="space-y-6">
@@ -80,9 +88,17 @@ export default function ContactDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/contactos")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">{contact.name}</h1>
-          <p className="text-muted-foreground text-sm">Detalle del contacto</p>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isBuyer ? "bg-info/10" : "bg-primary/10"}`}>
+            {isBuyer ? <ShoppingCart className="w-5 h-5 text-info" /> : <Home className="w-5 h-5 text-primary" />}
+          </div>
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground">{contact.name}</h1>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">{isBuyer ? "Comprador" : "Vendedor"}</Badge>
+              <p className="text-muted-foreground text-sm">Detalle del contacto</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -98,6 +114,12 @@ export default function ContactDetailPage() {
               <Phone className="w-4 h-4 text-muted-foreground" />
               <div><p className="text-xs text-muted-foreground">Teléfono</p><p className="font-medium">{contact.phone || "—"}</p></div>
             </div>
+            {contact.email && (
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-muted-foreground" />
+                <div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{contact.email}</p></div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <MapPin className="w-4 h-4 text-muted-foreground" />
               <div><p className="text-xs text-muted-foreground">Dirección</p><p className="font-medium">{contact.address || "—"}</p></div>
@@ -123,18 +145,52 @@ export default function ContactDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Buyer Profile Card */}
+      {isBuyer && buyerProfile && (
+        <Card>
+          <CardHeader><CardTitle className="text-base font-display">Perfil de comprador</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+              {buyerProfile.property_type && (
+                <div><p className="text-xs text-muted-foreground">Tipo</p><p className="font-medium">{PROPERTY_TYPES.find(t => t.value === buyerProfile.property_type)?.label || buyerProfile.property_type}</p></div>
+              )}
+              {buyerProfile.bedrooms_min && (
+                <div><p className="text-xs text-muted-foreground">Dormitorios</p><p className="font-medium">{buyerProfile.bedrooms_min}+</p></div>
+              )}
+              {buyerProfile.bathrooms_min && (
+                <div><p className="text-xs text-muted-foreground">Baños</p><p className="font-medium">{buyerProfile.bathrooms_min}+</p></div>
+              )}
+              {(buyerProfile.budget_min || buyerProfile.budget_max) && (
+                <div><p className="text-xs text-muted-foreground">Presupuesto</p><p className="font-medium">{buyerProfile.budget_min ? formatEuro(buyerProfile.budget_min) : "—"} - {buyerProfile.budget_max ? formatEuro(buyerProfile.budget_max) : "—"}</p></div>
+              )}
+              {buyerProfile.garage && buyerProfile.garage !== "indiferente" && (
+                <div><p className="text-xs text-muted-foreground">Garaje</p><p className="font-medium">{GARAGE_OPTIONS.find(o => o.value === buyerProfile.garage)?.label}</p></div>
+              )}
+              {buyerProfile.preferred_floor && buyerProfile.preferred_floor !== "indiferente" && (
+                <div><p className="text-xs text-muted-foreground">Planta</p><p className="font-medium">{FLOOR_OPTIONS.find(o => o.value === buyerProfile.preferred_floor)?.label}</p></div>
+              )}
+              {buyerProfile.preferred_zones && buyerProfile.preferred_zones.length > 0 && (
+                <div className="col-span-full">
+                  <p className="text-xs text-muted-foreground mb-1">Zonas preferidas</p>
+                  <div className="flex flex-wrap gap-1">{buyerProfile.preferred_zones.map((z: string) => <Badge key={z} variant="secondary" className="text-xs">{z}</Badge>)}</div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tabs */}
       <Tabs defaultValue="notas">
         <TabsList>
           <TabsTrigger value="notas"><FileText className="w-4 h-4 mr-1" />Notas</TabsTrigger>
           <TabsTrigger value="tareas"><CalendarIcon className="w-4 h-4 mr-1" />Tareas</TabsTrigger>
+          {isBuyer && <TabsTrigger value="sugeridas"><Building2 className="w-4 h-4 mr-1" />Propiedades sugeridas</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="notas">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Notas</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">Notas</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Textarea value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Escribe una nota..." className="flex-1" />
@@ -156,9 +212,7 @@ export default function ContactDetailPage() {
                         <div>
                           <p className="text-sm whitespace-pre-wrap">{note.content}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(note.updated_at), "dd MMM yyyy HH:mm", { locale: es })}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(note.updated_at), "dd MMM yyyy HH:mm", { locale: es })}</p>
                             <Button size="sm" variant="ghost" onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}>Editar</Button>
                           </div>
                         </div>
@@ -207,6 +261,43 @@ export default function ContactDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isBuyer && (
+          <TabsContent value="sugeridas">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Propiedades sugeridas</CardTitle></CardHeader>
+              <CardContent>
+                {suggestedProperties && suggestedProperties.length > 0 ? (
+                  <div className="space-y-3">
+                    {suggestedProperties.map((p) => (
+                      <Link key={p.id} to={`/propiedades/${p.id}`} className="block border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{p.address}</p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              {p.property_type && <span>{PROPERTY_TYPES.find(t => t.value === p.property_type)?.label}</span>}
+                              {p.bedrooms != null && <span>{p.bedrooms} hab.</span>}
+                              {p.bathrooms != null && <span>{p.bathrooms} baños</span>}
+                              {p.surface_area && <span>{p.surface_area} m²</span>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <StatusBadge status={p.status} />
+                            {p.listing_price && <p className="text-sm font-semibold mt-1">{formatEuro(p.listing_price)}</p>}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {buyerProfile ? "No hay propiedades que coincidan con el perfil" : "No hay perfil de comprador configurado"}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* New Task Dialog */}

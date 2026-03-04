@@ -12,11 +12,13 @@ export type ContactTask = Tables<"contact_tasks">;
 export const PROPERTY_TYPES = [
   { value: "piso", label: "Piso" },
   { value: "casa", label: "Casa" },
+  { value: "local", label: "Local" },
   { value: "terreno", label: "Terreno" },
   { value: "comercial", label: "Comercial" },
 ] as const;
 
 export const PROPERTY_STATUSES = [
+  { value: "prospecto", label: "Prospecto" },
   { value: "disponible", label: "Disponible" },
   { value: "reservado", label: "Reservado" },
   { value: "en_oferta", label: "En oferta" },
@@ -66,6 +68,32 @@ export const TASK_STATUSES = [
   { value: "completada", label: "Completada" },
 ] as const;
 
+export const CONTACT_TYPES = [
+  { value: "comprador", label: "Comprador" },
+  { value: "vendedor", label: "Vendedor" },
+] as const;
+
+export const GARAGE_OPTIONS = [
+  { value: "si", label: "Sí" },
+  { value: "no", label: "No" },
+  { value: "indiferente", label: "Indiferente" },
+] as const;
+
+export const FLOOR_OPTIONS = [
+  { value: "bajo", label: "Bajo" },
+  { value: "planta_intermedia", label: "Planta intermedia" },
+  { value: "planta_alta", label: "Planta alta" },
+  { value: "indiferente", label: "Indiferente" },
+] as const;
+
+export const PAMPLONA_ZONES = [
+  "Pamplona", "Barañáin", "Burlada", "Villava", "Huarte", "Ansoáin", "Berriozar",
+  "Cizur Menor", "Zizur Mayor", "Sarriguren", "Noáin", "Cordovilla", "Orkoien",
+  "Galar", "Valle de Egüés", "Mutilva", "Beloso", "Mendillorri", "Lezkairu",
+  "Etxabakoitz", "Chantrea", "Rochapea", "Segundo Ensanche", "Primer Ensanche",
+  "Casco Antiguo", "San Juan", "Ermitagaña", "Iturrama", "Azpilagaña", "Arrosadia",
+] as const;
+
 export type PropertyType = typeof PROPERTY_TYPES[number]["value"];
 export type PropertyStatus = typeof PROPERTY_STATUSES[number]["value"];
 export type DocumentType = typeof DOCUMENT_TYPES[number]["value"];
@@ -74,3 +102,4 @@ export type LeadStatus = typeof LEAD_STATUSES[number]["value"];
 export type AdvertiserType = typeof ADVERTISER_TYPES[number]["value"];
 export type SourcePortal = typeof SOURCE_PORTALS[number]["value"];
 export type TaskStatus = typeof TASK_STATUSES[number]["value"];
+export type ContactType = typeof CONTACT_TYPES[number]["value"];

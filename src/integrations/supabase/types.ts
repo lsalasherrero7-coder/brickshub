@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      buyer_profiles: {
+        Row: {
+          bathrooms_min: number | null
+          bedrooms_min: number | null
+          budget_max: number | null
+          budget_min: number | null
+          contact_id: string
+          created_at: string
+          garage: string | null
+          id: string
+          preferred_floor: string | null
+          preferred_zones: string[] | null
+          property_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          bathrooms_min?: number | null
+          bedrooms_min?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          contact_id: string
+          created_at?: string
+          garage?: string | null
+          id?: string
+          preferred_floor?: string | null
+          preferred_zones?: string[] | null
+          property_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bathrooms_min?: number | null
+          bedrooms_min?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          contact_id?: string
+          created_at?: string
+          garage?: string | null
+          id?: string
+          preferred_floor?: string | null
+          preferred_zones?: string[] | null
+          property_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_profiles_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_notes: {
         Row: {
           contact_id: string
@@ -91,8 +144,11 @@ export type Database = {
         Row: {
           address: string | null
           agent_id: string | null
+          contact_type: string
           created_at: string
+          email: string | null
           id: string
+          last_name: string | null
           lead_id: string | null
           lead_status: string
           name: string
@@ -104,8 +160,11 @@ export type Database = {
         Insert: {
           address?: string | null
           agent_id?: string | null
+          contact_type?: string
           created_at?: string
+          email?: string | null
           id?: string
+          last_name?: string | null
           lead_id?: string | null
           lead_status?: string
           name: string
@@ -117,8 +176,11 @@ export type Database = {
         Update: {
           address?: string | null
           agent_id?: string | null
+          contact_type?: string
           created_at?: string
+          email?: string | null
           id?: string
+          last_name?: string | null
           lead_id?: string | null
           lead_status?: string
           name?: string
@@ -220,6 +282,7 @@ export type Database = {
           status: string
           surface_area: number | null
           updated_at: string
+          zone: string | null
         }
         Insert: {
           address: string
@@ -240,6 +303,7 @@ export type Database = {
           status?: string
           surface_area?: number | null
           updated_at?: string
+          zone?: string | null
         }
         Update: {
           address?: string
@@ -260,6 +324,7 @@ export type Database = {
           status?: string
           surface_area?: number | null
           updated_at?: string
+          zone?: string | null
         }
         Relationships: []
       }

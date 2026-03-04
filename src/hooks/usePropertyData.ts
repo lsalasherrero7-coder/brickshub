@@ -227,13 +227,10 @@ export function usePropertyStats() {
       if (docsError) throw docsError;
 
       const total = properties.length;
-      const byStatus = {
-        disponible: properties.filter((p) => p.status === "disponible").length,
-        reservado: properties.filter((p) => p.status === "reservado").length,
-        en_oferta: properties.filter((p) => p.status === "en_oferta").length,
-        vendido: properties.filter((p) => p.status === "vendido").length,
-        retirado: properties.filter((p) => p.status === "retirado").length,
-      };
+      const byStatus: Record<string, number> = {};
+      for (const p of properties) {
+        byStatus[p.status] = (byStatus[p.status] || 0) + 1;
+      }
 
       const requiredDocs = [
         "nota_simple", "escrituras", "cedula_habitabilidad",
@@ -251,9 +248,9 @@ export function usePropertyStats() {
         return requiredDocs.some((d) => !propertyDocs.has(d));
       });
 
-      // Comisión potencial: commission from disponible + reservado
+      // Comisión potencial: commission from prospecto + disponible + reservado
       const potentialCommission = properties
-        .filter((p) => p.status === "disponible" || p.status === "reservado")
+        .filter((p) => p.status === "prospecto" || p.status === "disponible" || p.status === "reservado")
         .reduce((sum, p) => sum + ((p.listing_price || 0) * (p.commission_pct || 3) / 100), 0);
 
       // Facturación current year: commission from vendido closed this year

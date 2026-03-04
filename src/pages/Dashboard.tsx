@@ -130,6 +130,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-3">
               {[
+                { status: "prospecto", count: stats?.byStatus.prospecto || 0 },
                 { status: "disponible", count: stats?.byStatus.disponible || 0 },
                 { status: "reservado", count: stats?.byStatus.reservado || 0 },
                 { status: "en_oferta", count: stats?.byStatus.en_oferta || 0 },

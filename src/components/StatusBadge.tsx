@@ -9,6 +9,7 @@ export default function StatusBadge({ status, size = "sm" }: StatusBadgeProps) {
   const label = PROPERTY_STATUSES.find((s) => s.value === status)?.label || status;
 
   const classMap: Record<string, string> = {
+    prospecto: "status-badge-prospecto",
     disponible: "status-badge-disponible",
     reservado: "status-badge-reservado",
     en_oferta: "status-badge-en-oferta",

@@ -11,7 +11,7 @@ export function useContacts() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Contact[];
+      return data;
     },
   });
 }
@@ -27,7 +27,7 @@ export function useContact(id: string | undefined) {
         .eq("id", id!)
         .single();
       if (error) throw error;
-      return data as Contact;
+      return data;
     },
   });
 }
@@ -148,7 +148,7 @@ export function useCreateContactTask() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, vars) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contact_tasks"] });
     },
   });
@@ -169,6 +169,62 @@ export function useUpdateContactTaskStatus() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contact_tasks"] });
+    },
+  });
+}
+
+// Buyer Profile
+export function useBuyerProfile(contactId: string | undefined) {
+  return useQuery({
+    queryKey: ["buyer_profile", contactId],
+    enabled: !!contactId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("buyer_profiles")
+        .select("*")
+        .eq("contact_id", contactId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Suggested properties for buyer
+export function useSuggestedProperties(contactId: string | undefined) {
+  return useQuery({
+    queryKey: ["suggested_properties", contactId],
+    enabled: !!contactId,
+    queryFn: async () => {
+      // First get buyer profile
+      const { data: profile } = await supabase
+        .from("buyer_profiles")
+        .select("*")
+        .eq("contact_id", contactId!)
+        .maybeSingle();
+
+      if (!profile) return [];
+
+      // Get available properties
+      const { data: properties, error } = await supabase
+        .from("properties")
+        .select("*")
+        .in("status", ["disponible", "prospecto"]);
+
+      if (error || !properties) return [];
+
+      // Filter matches
+      return properties.filter((p) => {
+        if (profile.property_type && p.property_type !== profile.property_type) return false;
+        if (profile.budget_max && p.listing_price && p.listing_price > profile.budget_max) return false;
+        if (profile.budget_min && p.listing_price && p.listing_price < profile.budget_min) return false;
+        if (profile.bedrooms_min && p.bedrooms && p.bedrooms < profile.bedrooms_min) return false;
+        if (profile.bathrooms_min && p.bathrooms && p.bathrooms < profile.bathrooms_min) return false;
+        if (profile.preferred_zones && profile.preferred_zones.length > 0 && (p as any).zone) {
+          if (!profile.preferred_zones.includes((p as any).zone)) return false;
+        }
+        return true;
+      });
     },
   });
 }

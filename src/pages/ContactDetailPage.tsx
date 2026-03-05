@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useBuyerProfile, useSuggestedProperties } from "@/hooks/useContactData";
+import { useContact, useUpdateContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useBuyerProfile, useSuggestedProperties } from "@/hooks/useContactData";
 import { usePropertyVisits } from "@/hooks/useVisitData";
 import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES, CONTACT_TYPES, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import StatusBadge from "@/components/StatusBadge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle } from "lucide-react";
 
 export default function ContactDetailPage() {
@@ -32,6 +33,7 @@ export default function ContactDetailPage() {
     contact?.contact_type === "comprador" ? id : undefined
   );
   const { data: propertyVisits } = usePropertyVisits(contact?.property_id || undefined);
+  const updateContact = useUpdateContact();
   const createNote = useCreateContactNote();
   const updateNote = useUpdateContactNote();
   const createTask = useCreateContactTask();
@@ -132,7 +134,22 @@ export default function ContactDetailPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Estado</p>
-              <Badge>{statusLabel}</Badge>
+              <Select
+                value={contact.lead_status}
+                onValueChange={async (value) => {
+                  await updateContact.mutateAsync({ id: contact.id, lead_status: value });
+                  toast({ title: "Estado actualizado" });
+                }}
+              >
+                <SelectTrigger className="w-[180px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_STATUSES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             {contact.property_id && (
               <div className="flex items-center gap-3">

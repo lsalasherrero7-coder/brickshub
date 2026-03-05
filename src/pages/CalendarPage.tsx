@@ -2,10 +2,11 @@ import { useState, useMemo } from "react";
 import { useVisits, useUpdateVisitStatus } from "@/hooks/useVisitData";
 import { useProperties } from "@/hooks/usePropertyData";
 import { useAllContactTasks } from "@/hooks/useContactData";
+import { useMarketingLeads } from "@/hooks/useMarketingLeadData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo, Megaphone } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { VISIT_STATUSES } from "@/lib/types";
@@ -24,6 +25,7 @@ export default function CalendarPage() {
   const { data: visits } = useVisits();
   const { data: properties } = useProperties();
   const { data: contactTasks } = useAllContactTasks();
+  const { data: marketingLeads } = useMarketingLeads();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
@@ -65,6 +67,16 @@ export default function CalendarPage() {
     });
     return map;
   }, [contactTasks]);
+
+  const leadActionsByDate = useMemo(() => {
+    const map = new Map<string, any[]>();
+    (marketingLeads || []).filter((l) => l.next_action_date && !["convertido", "descartado"].includes(l.status)).forEach((l) => {
+      const key = format(new Date(l.next_action_date!), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(l);
+    });
+    return map;
+  }, [marketingLeads]);
 
   const navigatePrev = () => setCurrentDate((d) => view === "month" ? addMonths(d, -1) : addWeeks(d, -1));
   const navigateNext = () => setCurrentDate((d) => view === "month" ? addMonths(d, 1) : addWeeks(d, 1));
@@ -143,6 +155,7 @@ export default function CalendarPage() {
               const key = format(day, "yyyy-MM-dd");
               const dayVisits = visitsByDate.get(key) || [];
               const dayTasks = tasksByDate.get(key) || [];
+              const dayLeadActions = leadActionsByDate.get(key) || [];
               const isToday = isSameDay(day, new Date());
               const isCurrentMonth = isSameMonth(day, currentDate);
 
@@ -179,6 +192,16 @@ export default function CalendarPage() {
                       >
                         <ListTodo className="w-2.5 h-2.5 inline mr-0.5" />
                         {format(new Date(t.due_date), "HH:mm")} {t.title}
+                      </Link>
+                    ))}
+                    {dayLeadActions.slice(0, view === "week" ? 3 : 1).map((l: any) => (
+                      <Link
+                        key={l.id}
+                        to={`/leads/${l.id}`}
+                        className="w-full block text-[10px] leading-tight px-1.5 py-0.5 rounded truncate bg-purple-100 text-purple-800"
+                      >
+                        <Megaphone className="w-2.5 h-2.5 inline mr-0.5" />
+                        {format(new Date(l.next_action_date), "HH:mm")} {l.name}
                       </Link>
                     ))}
                   </div>

@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
 import { useLeads, useCreateLead, useUpdateLeadStatus } from "@/hooks/useLeadData";
 import { useProperties } from "@/hooks/usePropertyData";
+import { useCreateVisit } from "@/hooks/useVisitData";
 import { supabase } from "@/integrations/supabase/client";
 import { LEAD_STATUSES, ADVERTISER_TYPES, SOURCE_PORTALS } from "@/lib/types";
+import type { Lead } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +14,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ExternalLink, Link2 } from "lucide-react";
+import { Plus, Search, ExternalLink, Link2, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 const statusColors: Record<string, string> = {
   no_contactado: "bg-muted text-muted-foreground",
@@ -34,11 +41,20 @@ export default function CaptacionPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const createVisit = useCreateVisit();
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [newLead, setNewLead] = useState({ address: "", listing_url: "", advertiser_type: "propietario", name: "", phone: "", source_portal: "manual" });
+
+  // Visit scheduling modal state
+  const [visitModalOpen, setVisitModalOpen] = useState(false);
+  const [pendingVisitLead, setPendingVisitLead] = useState<Lead | null>(null);
+  const [visitDate, setVisitDate] = useState<Date>();
+  const [visitTime, setVisitTime] = useState("10:00");
+  const [visitNotes, setVisitNotes] = useState("");
 
   const filtered = useMemo(() => {
     if (!leads) return [];
@@ -64,10 +80,25 @@ export default function CaptacionPage() {
     const lead = leads?.find((l) => l.id === leadId);
     if (!lead) return;
 
+    // Intercept "visita_cerrada" to open scheduling modal
+    if (newStatus === "visita_cerrada") {
+      setPendingVisitLead(lead);
+      setVisitDate(undefined);
+      setVisitTime("10:00");
+      setVisitNotes("");
+      setVisitModalOpen(true);
+      return;
+    }
+
+    await executeStatusChange(lead, newStatus);
+  };
+
+  const executeStatusChange = async (lead: Lead, newStatus: string) => {
+    const leadId = lead.id;
     const oldStatus = lead.lead_status;
 
     try {
-      const updatedLead = await updateStatus.mutateAsync({ id: leadId, lead_status: newStatus });
+      await updateStatus.mutateAsync({ id: leadId, lead_status: newStatus });
 
       // Auto-create contact if moving from no_contactado to any other status
       if (oldStatus === "no_contactado" && newStatus !== "no_contactado") {
@@ -124,6 +155,42 @@ export default function CaptacionPage() {
       }
     } catch {
       toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" });
+    }
+  };
+
+  const handleConfirmVisit = async () => {
+    if (!pendingVisitLead || !visitDate) return;
+    const lead = pendingVisitLead;
+
+    try {
+      // First execute the status change
+      await executeStatusChange(lead, "visita_cerrada");
+
+      // Find or determine property_id
+      const propertyId = lead.property_id || propertyMatch.get(lead.address.toLowerCase().trim());
+
+      if (propertyId) {
+        const [hours, minutes] = visitTime.split(":").map(Number);
+        const dateTime = new Date(visitDate);
+        dateTime.setHours(hours, minutes, 0, 0);
+
+        await createVisit.mutateAsync({
+          property_id: propertyId,
+          client_first_name: lead.name || "Sin nombre",
+          client_last_name: "",
+          client_phone: lead.phone || undefined,
+          visit_date: dateTime.toISOString(),
+          notes: visitNotes.trim() || undefined,
+        });
+        toast({ title: "Visita agendada", description: `Visita programada para ${format(dateTime, "dd/MM/yyyy HH:mm")}` });
+      } else {
+        toast({ title: "Estado actualizado", description: "No se encontró propiedad vinculada para crear la visita en el calendario." });
+      }
+    } catch {
+      toast({ title: "Error", description: "No se pudo agendar la visita", variant: "destructive" });
+    } finally {
+      setVisitModalOpen(false);
+      setPendingVisitLead(null);
     }
   };
 
@@ -281,6 +348,55 @@ export default function CaptacionPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancelar</Button>
             <Button onClick={handleAddLead} disabled={!newLead.address.trim()}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Schedule Visit Dialog */}
+      <Dialog open={visitModalOpen} onOpenChange={(open) => { if (!open) { setVisitModalOpen(false); setPendingVisitLead(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Agendar Visita</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Dirección</Label>
+              <p className="font-medium text-sm">{pendingVisitLead?.address}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Cliente</Label>
+              <p className="font-medium text-sm">{pendingVisitLead?.name || "Sin nombre"} {pendingVisitLead?.phone ? `· ${pendingVisitLead.phone}` : ""}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Fecha *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal mt-1", !visitDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {visitDate ? format(visitDate, "dd/MM/yyyy") : "Seleccionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={visitDate} onSelect={setVisitDate} initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label>Hora *</Label>
+                <Input type="time" value={visitTime} onChange={(e) => setVisitTime(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <Label>Notas</Label>
+              <Textarea value={visitNotes} onChange={(e) => setVisitNotes(e.target.value)} rows={2} placeholder="Notas opcionales..." className="mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setVisitModalOpen(false); setPendingVisitLead(null); }}>Cancelar</Button>
+            <Button onClick={handleConfirmVisit} disabled={!visitDate || createVisit.isPending}>
+              {createVisit.isPending ? "Agendando..." : "Confirmar Visita"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

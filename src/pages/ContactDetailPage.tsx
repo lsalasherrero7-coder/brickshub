@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useBuyerProfile, useSuggestedProperties } from "@/hooks/useContactData";
+import { usePropertyVisits } from "@/hooks/useVisitData";
 import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES, CONTACT_TYPES, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import StatusBadge from "@/components/StatusBadge";
-import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart } from "lucide-react";
+import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle } from "lucide-react";
 
 export default function ContactDetailPage() {
   const { id } = useParams();
@@ -30,6 +31,7 @@ export default function ContactDetailPage() {
   const { data: suggestedProperties } = useSuggestedProperties(
     contact?.contact_type === "comprador" ? id : undefined
   );
+  const { data: propertyVisits } = usePropertyVisits(contact?.property_id || undefined);
   const createNote = useCreateContactNote();
   const updateNote = useUpdateContactNote();
   const createTask = useCreateContactTask();
@@ -185,6 +187,7 @@ export default function ContactDetailPage() {
         <TabsList>
           <TabsTrigger value="notas"><FileText className="w-4 h-4 mr-1" />Notas</TabsTrigger>
           <TabsTrigger value="tareas"><CalendarIcon className="w-4 h-4 mr-1" />Tareas</TabsTrigger>
+          {contact.property_id && <TabsTrigger value="visitas"><Clock className="w-4 h-4 mr-1" />Visitas</TabsTrigger>}
           {isBuyer && <TabsTrigger value="sugeridas"><Building2 className="w-4 h-4 mr-1" />Propiedades sugeridas</TabsTrigger>}
         </TabsList>
 
@@ -261,6 +264,42 @@ export default function ContactDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Visits Tab */}
+        {contact.property_id && (
+          <TabsContent value="visitas">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Visitas programadas</CardTitle></CardHeader>
+              <CardContent>
+                {propertyVisits && propertyVisits.length > 0 ? (
+                  <div className="space-y-3">
+                    {propertyVisits.map((visit) => {
+                      const statusIcon = visit.status === "completada" ? <CheckCircle className="w-4 h-4 text-success" /> : visit.status === "cancelada" ? <XCircle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-warning" />;
+                      return (
+                        <div key={visit.id} className="flex items-start gap-3 border rounded-lg p-3">
+                          {statusIcon}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{visit.client_first_name} {visit.client_last_name}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <CalendarIcon className="w-3 h-3" />
+                              {format(new Date(visit.visit_date), "dd MMM yyyy HH:mm", { locale: es })}
+                            </p>
+                            {visit.notes && <p className="text-xs text-muted-foreground mt-1">{visit.notes}</p>}
+                          </div>
+                          <Badge variant={visit.status === "completada" ? "secondary" : visit.status === "cancelada" ? "destructive" : "outline"} className="text-xs capitalize">
+                            {visit.status}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">Sin visitas registradas</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {isBuyer && (
           <TabsContent value="sugeridas">

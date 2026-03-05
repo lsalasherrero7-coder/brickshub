@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { usePropertyStats } from "@/hooks/usePropertyData";
 import { useProperties } from "@/hooks/usePropertyData";
-import { Building2, AlertTriangle, CheckCircle, TrendingUp, CalendarPlus, Euro, Receipt } from "lucide-react";
+import { useOverdueLeadsCount } from "@/hooks/useMarketingLeadData";
+import { Building2, AlertTriangle, CheckCircle, TrendingUp, CalendarPlus, Euro, Receipt, Megaphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -12,6 +13,7 @@ import ScheduleVisitModal from "@/components/ScheduleVisitModal";
 export default function Dashboard() {
   const { data: stats, isLoading } = usePropertyStats();
   const { data: properties } = useProperties();
+  const { data: overdueLeads } = useOverdueLeadsCount();
   const [scheduleOpen, setScheduleOpen] = useState(false);
 
   if (isLoading) {
@@ -184,6 +186,27 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Overdue Leads Widget */}
+      {(overdueLeads || 0) > 0 && (
+        <Card className="border-warning/50">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                <Megaphone className="w-5 h-5 text-warning" />
+              </div>
+              <div>
+                <p className="font-semibold">{overdueLeads} lead{overdueLeads !== 1 ? "s" : ""} con acción pendiente hoy o vencida</p>
+                <p className="text-xs text-muted-foreground">Requieren atención inmediata</p>
+              </div>
+            </div>
+            <Link to="/leads?filter=overdue">
+              <Button variant="outline" size="sm">Ver leads</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       <ScheduleVisitModal open={scheduleOpen} onOpenChange={setScheduleOpen} />
     </div>
   );

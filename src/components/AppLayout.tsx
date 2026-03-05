@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Building2, LayoutDashboard, Plus, CalendarDays, Target, Users } from "lucide-react";
+import { Building2, LayoutDashboard, Plus, CalendarDays, Target, Users, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -9,6 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { to: "/", label: "Panel", icon: LayoutDashboard },
     { to: "/propiedades", label: "Propiedades", icon: Building2 },
     { to: "/captacion", label: "Captación", icon: Target },
+    { to: "/leads", label: "Leads", icon: Megaphone },
     { to: "/contactos", label: "Contactos", icon: Users },
     { to: "/calendario", label: "Calendario", icon: CalendarDays },
   ];

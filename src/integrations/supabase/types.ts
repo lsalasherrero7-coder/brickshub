@@ -262,6 +262,119 @@ export type Database = {
           },
         ]
       }
+      marketing_campaigns: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      marketing_lead_interactions: {
+        Row: {
+          created_at: string
+          id: string
+          interaction_type: string
+          lead_id: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interaction_type: string
+          lead_id: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          lead_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_lead_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_leads: {
+        Row: {
+          assigned_agent_id: string | null
+          campaign_id: string
+          contact_id: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          next_action_date: string | null
+          next_action_note: string | null
+          next_action_type: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_agent_id?: string | null
+          campaign_id: string
+          contact_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          next_action_date?: string | null
+          next_action_note?: string | null
+          next_action_type?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_agent_id?: string | null
+          campaign_id?: string
+          contact_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          next_action_date?: string | null
+          next_action_note?: string | null
+          next_action_type?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_leads_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       properties: {
         Row: {
           address: string

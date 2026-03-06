@@ -155,6 +155,8 @@ export type Database = {
           phone: string | null
           property_id: string | null
           source_portal: string
+          status_tag: string | null
+          temperature_tag: string | null
           updated_at: string
         }
         Insert: {
@@ -171,6 +173,8 @@ export type Database = {
           phone?: string | null
           property_id?: string | null
           source_portal?: string
+          status_tag?: string | null
+          temperature_tag?: string | null
           updated_at?: string
         }
         Update: {
@@ -187,6 +191,8 @@ export type Database = {
           phone?: string | null
           property_id?: string | null
           source_portal?: string
+          status_tag?: string | null
+          temperature_tag?: string | null
           updated_at?: string
         }
         Relationships: [

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useContacts } from "@/hooks/useContactData";
-import { LEAD_STATUSES, SOURCE_PORTALS, CONTACT_TYPES } from "@/lib/types";
+import { useContacts, useUpdateContact } from "@/hooks/useContactData";
+import { LEAD_STATUSES, SOURCE_PORTALS, CONTACT_TYPES, TEMPERATURE_TAGS, STATUS_TAGS, TEMPERATURE_TAG_COLORS, STATUS_TAG_COLORS } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
-import { Search, User, Phone, MapPin, Globe, Plus, ShoppingCart, Home } from "lucide-react";
+import { Search, Phone, MapPin, Globe, Plus, ShoppingCart, Home } from "lucide-react";
 import AddContactModal from "@/components/AddContactModal";
+import InlineTagSelect from "@/components/InlineTagSelect";
+import { useToast } from "@/hooks/use-toast";
 
 const statusColors: Record<string, string> = {
   no_contactado: "bg-muted text-muted-foreground",
@@ -23,10 +25,23 @@ const statusColors: Record<string, string> = {
 
 export default function ContactosPage() {
   const { data: contacts, isLoading } = useContacts();
+  const updateContact = useUpdateContact();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [tempTagFilter, setTempTagFilter] = useState("all");
+  const [statusTagFilter, setStatusTagFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+
+  const handleTagChange = async (contactId: string, field: string, value: string) => {
+    try {
+      await updateContact.mutateAsync({ id: contactId, [field]: value } as any);
+      toast({ title: "Etiqueta actualizada" });
+    } catch {
+      toast({ title: "Error al actualizar", variant: "destructive" });
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!contacts) return [];
@@ -34,9 +49,11 @@ export default function ContactosPage() {
       const matchSearch = !search || [c.name, c.phone, c.address].some((f: any) => f?.toLowerCase().includes(search.toLowerCase()));
       const matchStatus = statusFilter === "all" || c.lead_status === statusFilter;
       const matchType = typeFilter === "all" || c.contact_type === typeFilter;
-      return matchSearch && matchStatus && matchType;
+      const matchTempTag = tempTagFilter === "all" || c.temperature_tag === tempTagFilter;
+      const matchStatusTag = statusTagFilter === "all" || c.status_tag === statusTagFilter;
+      return matchSearch && matchStatus && matchType && matchTempTag && matchStatusTag;
     });
-  }, [contacts, search, statusFilter, typeFilter]);
+  }, [contacts, search, statusFilter, typeFilter, tempTagFilter, statusTagFilter]);
 
   if (isLoading) {
     return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;
@@ -74,6 +91,20 @@ export default function ContactosPage() {
             {CONTACT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={tempTagFilter} onValueChange={setTempTagFilter}>
+          <SelectTrigger className="w-[170px]"><SelectValue placeholder="Temperatura" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas temp.</SelectItem>
+            {TEMPERATURE_TAGS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={statusTagFilter} onValueChange={setStatusTagFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Etiqueta" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas etiq.</SelectItem>
+            {STATUS_TAGS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {filtered.length === 0 ? (
@@ -107,6 +138,25 @@ export default function ContactosPage() {
                       </Badge>
                     </div>
                   </div>
+
+                  {/* Inline editable tags */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <InlineTagSelect
+                      value={contact.temperature_tag}
+                      options={TEMPERATURE_TAGS}
+                      colorMap={TEMPERATURE_TAG_COLORS}
+                      placeholder="+ Temp."
+                      onChange={(v) => handleTagChange(contact.id, "temperature_tag", v)}
+                    />
+                    <InlineTagSelect
+                      value={contact.status_tag}
+                      options={STATUS_TAGS}
+                      colorMap={STATUS_TAG_COLORS}
+                      placeholder="+ Estado"
+                      onChange={(v) => handleTagChange(contact.id, "status_tag", v)}
+                    />
+                  </div>
+
                   {contact.address && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{contact.address}</p>
                   )}

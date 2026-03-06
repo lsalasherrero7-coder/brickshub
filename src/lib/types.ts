@@ -103,3 +103,31 @@ export type AdvertiserType = typeof ADVERTISER_TYPES[number]["value"];
 export type SourcePortal = typeof SOURCE_PORTALS[number]["value"];
 export type TaskStatus = typeof TASK_STATUSES[number]["value"];
 export type ContactType = typeof CONTACT_TYPES[number]["value"];
+
+export const TEMPERATURE_TAGS = [
+  { value: "lead_frio", label: "Lead Frío" },
+  { value: "lead_templado", label: "Lead Templado" },
+  { value: "lead_caliente", label: "Lead Caliente" },
+  { value: "cierre_frio", label: "Cierre Frío" },
+  { value: "cierre_tibio", label: "Cierre Tibio" },
+  { value: "cierre_caliente", label: "Cierre Caliente" },
+] as const;
+
+export const STATUS_TAGS = [
+  { value: "seguimiento", label: "Seguimiento" },
+  { value: "cerrado", label: "Cerrado" },
+] as const;
+
+export const TEMPERATURE_TAG_COLORS: Record<string, string> = {
+  lead_frio: "bg-blue-100 text-blue-700",
+  lead_templado: "bg-yellow-100 text-yellow-700",
+  lead_caliente: "bg-orange-100 text-orange-700",
+  cierre_frio: "bg-purple-100 text-purple-700",
+  cierre_tibio: "bg-teal-100 text-teal-700",
+  cierre_caliente: "bg-red-100 text-red-700",
+};
+
+export const STATUS_TAG_COLORS: Record<string, string> = {
+  seguimiento: "bg-gray-100 text-gray-600",
+  cerrado: "bg-emerald-100 text-emerald-700",
+};

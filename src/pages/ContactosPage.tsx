@@ -121,7 +121,7 @@ export default function ContactosPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const handleTagChange = async (contactId: string, field: string, value: string) => {
+  const handleTagChange = async (contactId: string, field: string, value: string | null) => {
     try {
       await updateContact.mutateAsync({ id: contactId, [field]: value } as any);
       toast({ title: "Etiqueta actualizada" });

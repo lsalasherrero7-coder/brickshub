@@ -67,6 +67,38 @@ export type Database = {
           },
         ]
       }
+      contact_interactions: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          interaction_type: string
+          notes: string | null
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          interaction_type: string
+          notes?: string | null
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_notes: {
         Row: {
           contact_id: string
@@ -152,6 +184,9 @@ export type Database = {
           lead_id: string | null
           lead_status: string
           name: string
+          next_action_date: string | null
+          next_action_note: string | null
+          next_action_type: string | null
           phone: string | null
           property_id: string | null
           source_portal: string
@@ -170,6 +205,9 @@ export type Database = {
           lead_id?: string | null
           lead_status?: string
           name: string
+          next_action_date?: string | null
+          next_action_note?: string | null
+          next_action_type?: string | null
           phone?: string | null
           property_id?: string | null
           source_portal?: string
@@ -188,6 +226,9 @@ export type Database = {
           lead_id?: string | null
           lead_status?: string
           name?: string
+          next_action_date?: string | null
+          next_action_note?: string | null
+          next_action_type?: string | null
           phone?: string | null
           property_id?: string | null
           source_portal?: string

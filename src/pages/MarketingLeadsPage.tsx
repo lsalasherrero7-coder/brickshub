@@ -202,8 +202,18 @@ export default function MarketingLeadsPage() {
                           {format(actionDate, "dd/MM/yyyy HH:mm", { locale: es })}
                         </span>
                       ) : "—"}
+                     </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditForm({ id: lead.id, name: lead.name, phone: lead.phone || "", email: lead.email || "", campaign_id: lead.campaign_id }); setEditOpen(true); }}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(lead.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
-                  </TableRow>
+                   </TableRow>
                 );
               })}
             </TableBody>

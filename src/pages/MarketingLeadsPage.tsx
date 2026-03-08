@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useMarketingLeads, useCampaigns, useCreateMarketingLead, useCreateCampaign, useDeleteCampaign } from "@/hooks/useMarketingLeadData";
+import { useMarketingLeads, useCampaigns, useCreateMarketingLead, useCreateCampaign, useDeleteCampaign, useDeleteMarketingLead, useUpdateMarketingLead } from "@/hooks/useMarketingLeadData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Search, Settings, Trash2, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil } from "lucide-react";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 const MKTG_LEAD_STATUSES = [
   { value: "nuevo", label: "Nuevo" },
@@ -39,6 +40,8 @@ export default function MarketingLeadsPage() {
   const createLead = useCreateMarketingLead();
   const createCampaign = useCreateCampaign();
   const deleteCampaign = useDeleteCampaign();
+  const deleteMarketingLead = useDeleteMarketingLead();
+  const updateMarketingLead = useUpdateMarketingLead();
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");
@@ -51,6 +54,9 @@ export default function MarketingLeadsPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", campaign_id: "" });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ id: "", name: "", phone: "", email: "", campaign_id: "" });
 
   const filtered = useMemo(() => {
     if (!leads) return [];
@@ -86,6 +92,26 @@ export default function MarketingLeadsPage() {
     await createCampaign.mutateAsync(newCampaignName.trim());
     toast({ title: "Campaña añadida" });
     setNewCampaignName("");
+  };
+
+  const handleEditLead = async () => {
+    if (!editForm.name || !editForm.campaign_id) return;
+    await updateMarketingLead.mutateAsync({
+      id: editForm.id,
+      name: editForm.name,
+      phone: editForm.phone || null,
+      email: editForm.email || null,
+      campaign_id: editForm.campaign_id,
+    });
+    toast({ title: "Lead actualizado" });
+    setEditOpen(false);
+  };
+
+  const handleDeleteLead = async () => {
+    if (!deleteId) return;
+    await deleteMarketingLead.mutateAsync(deleteId);
+    toast({ title: "Lead eliminado" });
+    setDeleteId(null);
   };
 
   if (isLoading) return <div className="p-8 animate-pulse"><div className="h-8 bg-muted rounded w-48 mb-4" /><div className="h-64 bg-muted rounded" /></div>;
@@ -146,12 +172,13 @@ export default function MarketingLeadsPage() {
                 <TableHead>Próx. acción</TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("next_action_date")}>
                   <span className="flex items-center gap-1">Fecha acción <ArrowUpDown className="w-3 h-3" /></span>
-                </TableHead>
-              </TableRow>
+                 </TableHead>
+                 <TableHead className="w-[80px]"></TableHead>
+               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
               ) : filtered.map((lead) => {
                 const actionDate = lead.next_action_date ? parseISO(lead.next_action_date) : null;
                 const isOverdue = actionDate && isPast(actionDate) && !isToday(actionDate) && !["convertido", "descartado"].includes(lead.status);
@@ -175,8 +202,18 @@ export default function MarketingLeadsPage() {
                           {format(actionDate, "dd/MM/yyyy HH:mm", { locale: es })}
                         </span>
                       ) : "—"}
+                     </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditForm({ id: lead.id, name: lead.name, phone: lead.phone || "", email: lead.email || "", campaign_id: lead.campaign_id }); setEditOpen(true); }}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(lead.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
-                  </TableRow>
+                   </TableRow>
                 );
               })}
             </TableBody>
@@ -228,6 +265,38 @@ export default function MarketingLeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit lead dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) setEditOpen(false); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Lead</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Nombre *</Label><Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} /></div>
+            <div><Label>Teléfono</Label><Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+            <div><Label>Email</Label><Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} /></div>
+            <div>
+              <Label>Campaña *</Label>
+              <Select value={editForm.campaign_id} onValueChange={(v) => setEditForm({ ...editForm, campaign_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar campaña" /></SelectTrigger>
+                <SelectContent>
+                  {(campaigns || []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={handleEditLead} disabled={updateMarketingLead.isPending}>Guardar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete lead dialog */}
+      <DeleteConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="¿Eliminar lead de marketing?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado (si existe) no será eliminado."
+        onConfirm={handleDeleteLead}
+        isPending={deleteMarketingLead.isPending}
+      />
     </div>
   );
 }

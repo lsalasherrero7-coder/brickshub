@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useLeads, useCreateLead, useUpdateLeadStatus } from "@/hooks/useLeadData";
+import { useLeads, useCreateLead, useUpdateLeadStatus, useUpdateLead, useDeleteLead } from "@/hooks/useLeadData";
 import { useProperties } from "@/hooks/usePropertyData";
 import { useCreateVisit } from "@/hooks/useVisitData";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,9 +19,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ExternalLink, Link2, CalendarIcon } from "lucide-react";
+import { Plus, Search, ExternalLink, Link2, CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 const statusColors: Record<string, string> = {
   no_contactado: "bg-muted text-muted-foreground",
@@ -38,6 +39,8 @@ export default function CaptacionPage() {
   const { data: properties } = useProperties();
   const createLead = useCreateLead();
   const updateStatus = useUpdateLeadStatus();
+  const updateLead = useUpdateLead();
+  const deleteLead = useDeleteLead();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -48,6 +51,9 @@ export default function CaptacionPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [newLead, setNewLead] = useState({ address: "", listing_url: "", advertiser_type: "propietario", name: "", phone: "", source_portal: "manual" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editLead, setEditLead] = useState<Lead | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Visit scheduling modal state
   const [visitModalOpen, setVisitModalOpen] = useState(false);
@@ -206,6 +212,37 @@ export default function CaptacionPage() {
     }
   };
 
+  const handleEditLead = async () => {
+    if (!editLead) return;
+    try {
+      await updateLead.mutateAsync({
+        id: editLead.id,
+        address: editLead.address,
+        listing_url: editLead.listing_url,
+        advertiser_type: editLead.advertiser_type,
+        name: editLead.name,
+        phone: editLead.phone,
+        source_portal: editLead.source_portal,
+      });
+      setEditOpen(false);
+      setEditLead(null);
+      toast({ title: "Lead actualizado" });
+    } catch {
+      toast({ title: "Error", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteLead = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteLead.mutateAsync(deleteId);
+      toast({ title: "Lead eliminado" });
+    } catch {
+      toast({ title: "Error al eliminar", variant: "destructive" });
+    }
+    setDeleteId(null);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -262,12 +299,13 @@ export default function CaptacionPage() {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Portal</TableHead>
-                <TableHead>Estado</TableHead>
+                 <TableHead>Estado</TableHead>
+                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
               ) : (
                 filtered.map((lead) => {
                   const matchedPropertyId = propertyMatch.get(lead.address.toLowerCase().trim());
@@ -309,6 +347,16 @@ export default function CaptacionPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                       </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLead({ ...lead }); setEditOpen(true); }}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(lead.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -400,6 +448,51 @@ export default function CaptacionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) { setEditOpen(false); setEditLead(null); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Lead</DialogTitle></DialogHeader>
+          {editLead && (
+            <div className="space-y-4">
+              <div><Label>Dirección *</Label><Input value={editLead.address} onChange={(e) => setEditLead({ ...editLead, address: e.target.value })} /></div>
+              <div><Label>Enlace al anuncio</Label><Input value={editLead.listing_url || ""} onChange={(e) => setEditLead({ ...editLead, listing_url: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tipo de anunciante</Label>
+                  <Select value={editLead.advertiser_type} onValueChange={(v) => setEditLead({ ...editLead, advertiser_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{ADVERTISER_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Portal de origen</Label>
+                  <Select value={editLead.source_portal} onValueChange={(v) => setEditLead({ ...editLead, source_portal: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{SOURCE_PORTALS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label>Nombre</Label><Input value={editLead.name || ""} onChange={(e) => setEditLead({ ...editLead, name: e.target.value })} /></div>
+              <div><Label>Teléfono</Label><Input value={editLead.phone || ""} onChange={(e) => setEditLead({ ...editLead, phone: e.target.value })} /></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditLead(null); }}>Cancelar</Button>
+            <Button onClick={handleEditLead} disabled={!editLead?.address.trim()}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Lead Dialog */}
+      <DeleteConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="¿Eliminar lead?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado no será eliminado."
+        onConfirm={handleDeleteLead}
+        isPending={deleteLead.isPending}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useProperty, useCreateProperty, useUpdateProperty, useDeleteProperty } from "@/hooks/usePropertyData";
+import { useProperty, useCreateProperty, useUpdateProperty } from "@/hooks/usePropertyData";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, PAMPLONA_ZONES } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,10 +17,7 @@ import PropertyDocuments from "@/components/PropertyDocuments";
 import PropertyPhotos from "@/components/PropertyPhotos";
 import PropertyActivity from "@/components/PropertyActivity";
 import ScheduleVisitModal from "@/components/ScheduleVisitModal";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 async function syncOwnerToContacts(propertyId: string, ownerName: string | null, ownerPhone: string | null, ownerEmail: string | null, address: string) {
   if (!ownerName) return;
@@ -83,11 +80,12 @@ export default function PropertyForm() {
 
   const createMutation = useCreateProperty();
   const updateMutation = useUpdateProperty();
-  const deleteMutation = useDeleteProperty();
 
   const [form, setForm] = useState<Record<string, any>>({});
   const [initialized, setInitialized] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (existing && !initialized) {
     setForm(existing);
@@ -147,13 +145,32 @@ export default function PropertyForm() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (cascades: string[]) => {
+    setDeleting(true);
     try {
-      await deleteMutation.mutateAsync(id!);
+      if (cascades.includes("visits")) {
+        await supabase.from("visits").delete().eq("property_id", id!);
+      }
+      if (cascades.includes("documents")) {
+        await supabase.from("property_documents").delete().eq("property_id", id!);
+      }
+      if (cascades.includes("photos")) {
+        await supabase.from("property_photos").delete().eq("property_id", id!);
+      }
+      if (cascades.includes("contacts")) {
+        await supabase.from("contacts").update({ property_id: null }).eq("property_id", id!);
+      }
+      const { error } = await supabase.from("properties").delete().eq("id", id!);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success("Propiedad eliminada");
       navigate("/propiedades");
     } catch (err: any) {
       toast.error(err.message || "Error al eliminar");
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -189,28 +206,14 @@ export default function PropertyForm() {
             </Button>
           )}
           {!isNew && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Eliminar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Eliminar propiedad?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Se eliminarán todos los documentos y fotos asociados.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Eliminar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              variant="outline"
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Eliminar
+            </Button>
           )}
           <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending}>
             <Save className="w-4 h-4 mr-2" />
@@ -317,6 +320,21 @@ export default function PropertyForm() {
       </Tabs>
 
       {!isNew && <ScheduleVisitModal open={scheduleOpen} onOpenChange={setScheduleOpen} prefilledPropertyId={id} />}
+      
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="¿Eliminar propiedad?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
+        cascadeOptions={[
+          { key: "visits", label: "Visitas vinculadas", defaultChecked: true },
+          { key: "documents", label: "Documentos asociados", defaultChecked: true },
+          { key: "photos", label: "Fotos asociadas", defaultChecked: true },
+          { key: "contacts", label: "Desvincular contacto propietario (no se elimina)", defaultChecked: false },
+        ]}
+        onConfirm={handleDelete}
+        isPending={deleting}
+      />
     </div>
   );
 }

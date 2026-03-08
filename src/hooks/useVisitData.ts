@@ -75,3 +75,16 @@ export function useUpdateVisitStatus() {
     },
   });
 }
+
+export function useDeleteVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("visits").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["visits"] });
+    },
+  });
+}

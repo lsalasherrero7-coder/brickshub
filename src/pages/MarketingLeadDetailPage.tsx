@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useMarketingLead, useUpdateMarketingLead, useLeadInteractions, useCreateInteraction,
-  useCampaigns,
+  useCampaigns, useDeleteMarketingLead,
 } from "@/hooks/useMarketingLeadData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,8 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock, Trash2 } from "lucide-react";
 import LinkedContactPanel from "@/components/LinkedContactPanel";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 const MKTG_LEAD_STATUSES = [
   { value: "nuevo", label: "Nuevo" },
@@ -57,6 +58,7 @@ export default function MarketingLeadDetailPage() {
   const { data: campaigns } = useCampaigns();
   const updateLead = useUpdateMarketingLead();
   const createInteraction = useCreateInteraction();
+  const deleteMarketingLead = useDeleteMarketingLead();
 
   // Interaction form
   const [intType, setIntType] = useState("llamada");
@@ -67,6 +69,7 @@ export default function MarketingLeadDetailPage() {
   const [actionDate, setActionDate] = useState<Date | undefined>();
   const [actionTime, setActionTime] = useState("10:00");
   const [actionNote, setActionNote] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading || !lead) return <div className="p-8 animate-pulse"><div className="h-8 bg-muted rounded w-48" /></div>;
 
@@ -159,6 +162,9 @@ export default function MarketingLeadDetailPage() {
           <h1 className="font-display text-2xl font-bold">{lead.name}</h1>
           <p className="text-muted-foreground text-sm">Lead de marketing</p>
         </div>
+        <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteOpen(true)}>
+          <Trash2 className="w-4 h-4 mr-2" />Eliminar
+        </Button>
         <Select value={lead.status} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue />
@@ -287,6 +293,19 @@ export default function MarketingLeadDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="¿Eliminar lead de marketing?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado (si existe) no será eliminado."
+        onConfirm={async () => {
+          await deleteMarketingLead.mutateAsync(lead.id);
+          toast({ title: "Lead eliminado" });
+          navigate("/leads");
+        }}
+        isPending={deleteMarketingLead.isPending}
+      />
     </div>
   );
 }

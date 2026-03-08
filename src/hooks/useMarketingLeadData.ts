@@ -145,6 +145,21 @@ export function useUpdateMarketingLead() {
   });
 }
 
+export function useDeleteMarketingLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // Delete interactions first
+      await supabase.from("marketing_lead_interactions").delete().eq("lead_id", id);
+      const { error } = await supabase.from("marketing_leads").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing_leads"] });
+    },
+  });
+}
+
 // Interactions
 export function useLeadInteractions(leadId: string | undefined) {
   return useQuery({

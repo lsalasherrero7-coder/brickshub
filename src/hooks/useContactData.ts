@@ -105,6 +105,19 @@ export function useUpdateContactNote() {
   });
 }
 
+export function useDeleteContactNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, contact_id }: { id: string; contact_id: string }) => {
+      const { error } = await supabase.from("contact_notes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["contact_notes", vars.contact_id] });
+    },
+  });
+}
+
 // Tasks
 export function useContactTasks(contactId: string | undefined) {
   return useQuery({
@@ -169,6 +182,42 @@ export function useUpdateContactTaskStatus() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contact_tasks"] });
+    },
+  });
+}
+
+export function useDeleteContactTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, contact_id }: { id: string; contact_id: string }) => {
+      const { error } = await supabase.from("contact_tasks").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["contact_tasks", vars.contact_id] });
+      qc.invalidateQueries({ queryKey: ["contact_tasks"] });
+    },
+  });
+}
+
+export function useDeleteContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, cascades }: { id: string; cascades: string[] }) => {
+      if (cascades.includes("notes")) {
+        await supabase.from("contact_notes").delete().eq("contact_id", id);
+      }
+      if (cascades.includes("tasks")) {
+        await supabase.from("contact_tasks").delete().eq("contact_id", id);
+      }
+      if (cascades.includes("buyer_profile")) {
+        await supabase.from("buyer_profiles").delete().eq("contact_id", id);
+      }
+      const { error } = await supabase.from("contacts").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contacts"] });
     },
   });
 }

@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Building2 className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-display text-lg font-bold leading-tight">InmoGest</h1>
+              <h1 className="font-display text-lg font-bold leading-tight">BrickHub</h1>
               <p className="text-xs text-sidebar-foreground/60">CRM Inmobiliario</p>
             </div>
           </Link>

@@ -320,6 +320,21 @@ export default function PropertyForm() {
       </Tabs>
 
       {!isNew && <ScheduleVisitModal open={scheduleOpen} onOpenChange={setScheduleOpen} prefilledPropertyId={id} />}
+      
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="¿Eliminar propiedad?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
+        cascadeOptions={[
+          { key: "visits", label: "Visitas vinculadas", defaultChecked: true },
+          { key: "documents", label: "Documentos asociados", defaultChecked: true },
+          { key: "photos", label: "Fotos asociadas", defaultChecked: true },
+          { key: "contacts", label: "Desvincular contacto propietario (no se elimina)", defaultChecked: false },
+        ]}
+        onConfirm={handleDelete}
+        isPending={deleting}
+      />
     </div>
   );
 }

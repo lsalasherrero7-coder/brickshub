@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,27 +12,59 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, Link2 } from "lucide-react";
 
+export interface ContactPrefill {
+  name?: string;
+  last_name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  municipality?: string;
+  contact_type?: string;
+  source_portal?: string;
+  // Link back to origin
+  lead_id?: string;         // captacion lead
+  marketing_lead_id?: string; // marketing lead
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  prefill?: ContactPrefill;
 }
 
-export default function AddContactModal({ open, onOpenChange }: Props) {
+export default function AddContactModal({ open, onOpenChange, prefill }: Props) {
   const queryClient = useQueryClient();
   const { data: properties } = useProperties();
   const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState({
+  const defaultForm = {
     name: "", last_name: "", phone: "", email: "",
     contact_type: "comprador" as string,
-    // Vendedor fields
     address: "",
-    // Buyer profile fields
     property_type: "", bedrooms_min: "", bathrooms_min: "",
     budget_min: "", budget_max: "",
     garage: "indiferente", preferred_floor: "indiferente",
     preferred_zones: [] as string[],
-  });
+  };
+
+  const [form, setForm] = useState(defaultForm);
+
+  // Apply prefill when modal opens with new prefill data
+  useEffect(() => {
+    if (open && prefill) {
+      setForm({
+        ...defaultForm,
+        name: prefill.name || "",
+        last_name: prefill.last_name || "",
+        phone: prefill.phone || "",
+        email: prefill.email || "",
+        address: prefill.address || "",
+        contact_type: prefill.contact_type || "comprador",
+      });
+    } else if (open && !prefill) {
+      setForm(defaultForm);
+    }
+  }, [open, prefill]);
 
   const matchedProperty = useMemo(() => {
     if (form.contact_type !== "vendedor" || !form.address || !properties) return null;
@@ -55,19 +87,35 @@ export default function AddContactModal({ open, onOpenChange }: Props) {
     try {
       const fullName = [form.name, form.last_name].filter(Boolean).join(" ");
 
-      // Create contact
-      const { data: contact, error } = await supabase.from("contacts").insert({
+      const contactInsert = {
         name: fullName,
         last_name: form.last_name || null,
         phone: form.phone || null,
         email: form.email || null,
         contact_type: form.contact_type,
-        address: form.contact_type === "vendedor" ? form.address || null : null,
+        address: form.address || null,
         property_id: matchedProperty?.id || null,
-        source_portal: "manual",
-      }).select().single();
+        source_portal: prefill?.source_portal || "manual",
+        lead_id: prefill?.lead_id || null,
+      };
 
+      const { data: contact, error } = await supabase.from("contacts").insert(contactInsert).select().single();
       if (error) throw error;
+
+      // If marketing lead, link the contact back
+      if (prefill?.marketing_lead_id && contact) {
+        await supabase.from("marketing_leads")
+          .update({ contact_id: contact.id })
+          .eq("id", prefill.marketing_lead_id);
+        queryClient.invalidateQueries({ queryKey: ["marketing_leads"] });
+        queryClient.invalidateQueries({ queryKey: ["marketing_lead"] });
+      }
+
+      // If captacion lead, link the contact back
+      if (prefill?.lead_id && contact) {
+        // Already linked via lead_id in contact, but also update lead if needed
+        queryClient.invalidateQueries({ queryKey: ["leads"] });
+      }
 
       // If buyer, create buyer profile
       if (form.contact_type === "comprador" && contact) {
@@ -87,23 +135,11 @@ export default function AddContactModal({ open, onOpenChange }: Props) {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success("Contacto creado correctamente");
       onOpenChange(false);
-      resetForm();
     } catch (err: any) {
       toast.error(err.message || "Error al crear contacto");
     } finally {
       setSaving(false);
     }
-  };
-
-  const resetForm = () => {
-    setForm({
-      name: "", last_name: "", phone: "", email: "",
-      contact_type: "comprador", address: "",
-      property_type: "", bedrooms_min: "", bathrooms_min: "",
-      budget_min: "", budget_max: "",
-      garage: "indiferente", preferred_floor: "indiferente",
-      preferred_zones: [],
-    });
   };
 
   return (
@@ -133,19 +169,17 @@ export default function AddContactModal({ open, onOpenChange }: Props) {
             </Select>
           </div>
 
-          {/* Vendedor fields */}
-          {form.contact_type === "vendedor" && (
-            <div>
-              <Label>Dirección de la propiedad</Label>
-              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Dirección de la propiedad..." />
-              {matchedProperty && (
-                <div className="mt-2 flex items-center gap-2 text-sm text-primary">
-                  <Link2 className="w-4 h-4" />
-                  <span>Coincide con propiedad existente: {matchedProperty.address}</span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Address (always shown) */}
+          <div>
+            <Label>Dirección</Label>
+            <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Dirección..." />
+            {form.contact_type === "vendedor" && matchedProperty && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-primary">
+                <Link2 className="w-4 h-4" />
+                <span>Coincide con propiedad existente: {matchedProperty.address}</span>
+              </div>
+            )}
+          </div>
 
           {/* Comprador fields */}
           {form.contact_type === "comprador" && (

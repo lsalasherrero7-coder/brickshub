@@ -19,10 +19,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ExternalLink, Link2, CalendarIcon, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, ExternalLink, Link2, CalendarIcon, Pencil, Trash2, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import AddContactModal, { type ContactPrefill } from "@/components/AddContactModal";
 
 const statusColors: Record<string, string> = {
   no_contactado: "bg-muted text-muted-foreground",
@@ -61,6 +62,10 @@ export default function CaptacionPage() {
   const [visitDate, setVisitDate] = useState<Date>();
   const [visitTime, setVisitTime] = useState("10:00");
   const [visitNotes, setVisitNotes] = useState("");
+
+  // Add to contacts modal
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactPrefill, setContactPrefill] = useState<ContactPrefill | undefined>();
 
   const filtered = useMemo(() => {
     if (!leads) return [];
@@ -101,40 +106,9 @@ export default function CaptacionPage() {
 
   const executeStatusChange = async (lead: Lead, newStatus: string) => {
     const leadId = lead.id;
-    const oldStatus = lead.lead_status;
 
     try {
       await updateStatus.mutateAsync({ id: leadId, lead_status: newStatus });
-
-      // Auto-create contact if moving from no_contactado to any other status
-      if (oldStatus === "no_contactado" && newStatus !== "no_contactado") {
-        const { data: existingContact } = await supabase
-          .from("contacts")
-          .select("id")
-          .eq("lead_id", leadId)
-          .maybeSingle();
-
-        if (!existingContact) {
-          await supabase.from("contacts").insert({
-            name: lead.name || "Sin nombre",
-            phone: lead.phone,
-            address: lead.address,
-            lead_status: newStatus,
-            source_portal: lead.source_portal,
-            lead_id: leadId,
-          });
-          queryClient.invalidateQueries({ queryKey: ["contacts"] });
-          toast({ title: "Contacto creado", description: `${lead.name || "Sin nombre"} añadido a Contactos` });
-        } else {
-          // Update existing contact status
-          await supabase.from("contacts").update({ lead_status: newStatus }).eq("lead_id", leadId);
-          queryClient.invalidateQueries({ queryKey: ["contacts"] });
-        }
-      } else if (oldStatus !== "no_contactado") {
-        // Update contact status if it exists
-        await supabase.from("contacts").update({ lead_status: newStatus }).eq("lead_id", leadId);
-        queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      }
 
       // Auto-create property when status is "captado"
       if (newStatus === "captado") {
@@ -150,18 +124,27 @@ export default function CaptacionPage() {
           .single();
 
         if (!error && newProperty) {
-          // Link property to lead and contact
           await supabase.from("leads").update({ property_id: newProperty.id }).eq("id", leadId);
-          await supabase.from("contacts").update({ property_id: newProperty.id }).eq("lead_id", leadId);
           queryClient.invalidateQueries({ queryKey: ["leads"] });
-          queryClient.invalidateQueries({ queryKey: ["contacts"] });
           queryClient.invalidateQueries({ queryKey: ["properties"] });
-          toast({ title: "Propiedad creada", description: `"${lead.address}" añadida al portfolio con ${lead.name || "propietario"} como contacto.` });
+          toast({ title: "Propiedad creada", description: `"${lead.address}" añadida al portfolio.` });
         }
       }
     } catch {
       toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" });
     }
+  };
+
+  const handleAddToContacts = (lead: Lead) => {
+    setContactPrefill({
+      name: lead.name || "",
+      phone: lead.phone || "",
+      address: lead.address,
+      contact_type: "vendedor",
+      source_portal: lead.source_portal,
+      lead_id: lead.id,
+    });
+    setContactModalOpen(true);
   };
 
   const handleConfirmVisit = async () => {
@@ -350,6 +333,9 @@ export default function CaptacionPage() {
                        </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Añadir a Contactos" onClick={() => handleAddToContacts(lead)}>
+                            <UserPlus className="w-3.5 h-3.5" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLead({ ...lead }); setEditOpen(true); }}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
@@ -489,9 +475,16 @@ export default function CaptacionPage() {
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
         title="¿Eliminar lead?"
-        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado no será eliminado."
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
         onConfirm={handleDeleteLead}
         isPending={deleteLead.isPending}
+      />
+
+      {/* Add to Contacts Modal */}
+      <AddContactModal
+        open={contactModalOpen}
+        onOpenChange={setContactModalOpen}
+        prefill={contactPrefill}
       />
     </div>
   );

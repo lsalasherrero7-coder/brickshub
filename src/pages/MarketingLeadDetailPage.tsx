@@ -58,6 +58,7 @@ export default function MarketingLeadDetailPage() {
   const { data: campaigns } = useCampaigns();
   const updateLead = useUpdateMarketingLead();
   const createInteraction = useCreateInteraction();
+  const deleteMarketingLead = useDeleteMarketingLead();
 
   // Interaction form
   const [intType, setIntType] = useState("llamada");

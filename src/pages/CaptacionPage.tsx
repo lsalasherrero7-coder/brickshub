@@ -63,6 +63,10 @@ export default function CaptacionPage() {
   const [visitTime, setVisitTime] = useState("10:00");
   const [visitNotes, setVisitNotes] = useState("");
 
+  // Add to contacts modal
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactPrefill, setContactPrefill] = useState<ContactPrefill | undefined>();
+
   const filtered = useMemo(() => {
     if (!leads) return [];
     return leads.filter((l) => {

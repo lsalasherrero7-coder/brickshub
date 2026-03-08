@@ -1,18 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useVisits, useUpdateVisitStatus } from "@/hooks/useVisitData";
 import { useProperties } from "@/hooks/usePropertyData";
 import { useAllContactTasks } from "@/hooks/useContactData";
 import { useMarketingLeads } from "@/hooks/useMarketingLeadData";
+import { useGoogleCalendarStatus, useGoogleCalendarConnect, useGoogleCalendarDisconnect } from "@/hooks/useGoogleCalendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo, Megaphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo, Megaphone, Unplug } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { VISIT_STATUSES } from "@/lib/types";
 import type { Visit } from "@/lib/types";
 import ScheduleVisitModal from "@/components/ScheduleVisitModal";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {

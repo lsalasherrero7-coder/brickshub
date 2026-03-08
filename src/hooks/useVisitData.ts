@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Visit } from "@/lib/types";
+import { syncVisitToCalendar } from "@/hooks/useGoogleCalendar";
 
 export function useVisits() {
   return useQuery({
@@ -32,6 +33,27 @@ export function usePropertyVisits(propertyId: string | undefined) {
   });
 }
 
+async function buildVisitEvent(visit: any, propertyAddress?: string) {
+  const start = new Date(visit.visit_date);
+  const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour
+  return {
+    summary: `Visita: ${visit.client_first_name} ${visit.client_last_name}`,
+    description: visit.notes || "",
+    start_datetime: start.toISOString(),
+    end_datetime: end.toISOString(),
+    location: propertyAddress,
+  };
+}
+
+async function getPropertyAddress(propertyId: string): Promise<string | undefined> {
+  const { data } = await supabase
+    .from("properties")
+    .select("address")
+    .eq("id", propertyId)
+    .single();
+  return data?.address;
+}
+
 export function useCreateVisit() {
   const qc = useQueryClient();
   return useMutation({
@@ -51,8 +73,12 @@ export function useCreateVisit() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       qc.invalidateQueries({ queryKey: ["visits"] });
+      // Sync to Google Calendar
+      const address = await getPropertyAddress(data.property_id);
+      const event = await buildVisitEvent(data, address);
+      syncVisitToCalendar("create", data.id, event);
     },
   });
 }
@@ -70,8 +96,15 @@ export function useUpdateVisitStatus() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       qc.invalidateQueries({ queryKey: ["visits"] });
+      if (data.status === "cancelada") {
+        syncVisitToCalendar("delete", data.id);
+      } else {
+        const address = await getPropertyAddress(data.property_id);
+        const event = await buildVisitEvent(data, address);
+        syncVisitToCalendar("update", data.id, event);
+      }
     },
   });
 }
@@ -96,8 +129,11 @@ export function useUpdateVisit() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       qc.invalidateQueries({ queryKey: ["visits"] });
+      const address = await getPropertyAddress(data.property_id);
+      const event = await buildVisitEvent(data, address);
+      syncVisitToCalendar("update", data.id, event);
     },
   });
 }
@@ -106,6 +142,8 @@ export function useDeleteVisit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      // Sync delete to Google Calendar before deleting from DB
+      await syncVisitToCalendar("delete", id);
       const { error } = await supabase.from("visits").delete().eq("id", id);
       if (error) throw error;
     },

@@ -190,8 +190,14 @@ export default function LinkedContactPanel({ contactId }: LinkedContactPanelProp
                             ) : (
                               <div>
                                 <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                                <div className="flex items-center justify-between mt-2">
-                                  <p className="text-xs text-muted-foreground">{format(new Date(note.updated_at), "dd MMM yyyy HH:mm", { locale: es })}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <CalendarIcon className="w-3 h-3 text-muted-foreground" />
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(note.created_at), "dd MMM yyyy HH:mm", { locale: es })}
+                                    {note.updated_at !== note.created_at && (
+                                      <span className="ml-1 italic">(editado {format(new Date(note.updated_at), "dd MMM yyyy HH:mm", { locale: es })})</span>
+                                    )}
+                                  </p>
                                   <Button size="sm" variant="ghost" onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}>Editar</Button>
                                 </div>
                               </div>

@@ -1,18 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useVisits, useUpdateVisitStatus } from "@/hooks/useVisitData";
 import { useProperties } from "@/hooks/usePropertyData";
 import { useAllContactTasks } from "@/hooks/useContactData";
 import { useMarketingLeads } from "@/hooks/useMarketingLeadData";
+import { useGoogleCalendarStatus, useGoogleCalendarConnect, useGoogleCalendarDisconnect } from "@/hooks/useGoogleCalendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo, Megaphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo, Megaphone, Unplug } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { VISIT_STATUSES } from "@/lib/types";
 import type { Visit } from "@/lib/types";
 import ScheduleVisitModal from "@/components/ScheduleVisitModal";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
@@ -26,11 +27,27 @@ export default function CalendarPage() {
   const { data: properties } = useProperties();
   const { data: contactTasks } = useAllContactTasks();
   const { data: marketingLeads } = useMarketingLeads();
+  const { data: gcalStatus, refetch: refetchGcal } = useGoogleCalendarStatus();
+  const { connect: connectGcal } = useGoogleCalendarConnect();
+  const { disconnect: disconnectGcal } = useGoogleCalendarDisconnect();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const updateStatus = useUpdateVisitStatus();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const gcal = searchParams.get("gcal");
+    if (gcal === "success") {
+      toast.success("Google Calendar conectado correctamente");
+      refetchGcal();
+      setSearchParams({}, { replace: true });
+    } else if (gcal === "error") {
+      toast.error("Error al conectar Google Calendar");
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, refetchGcal, setSearchParams]);
 
   const propertyMap = useMemo(() => {
     const map = new Map<string, { address: string; id: string }>();
@@ -111,10 +128,23 @@ export default function CalendarPage() {
           <h1 className="font-display text-2xl font-bold">Calendario</h1>
           <p className="text-muted-foreground mt-1">Visitas programadas</p>
         </div>
-        <Button onClick={() => setScheduleOpen(true)}>
-          <CalendarDays className="w-4 h-4 mr-2" />
-          Agendar Visita
-        </Button>
+        <div className="flex items-center gap-2">
+          {gcalStatus?.connected ? (
+            <Button variant="outline" size="sm" onClick={disconnectGcal} className="text-destructive border-destructive/30">
+              <Unplug className="w-4 h-4 mr-1" />
+              Desconectar Google Calendar
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={connectGcal}>
+              <CalendarDays className="w-4 h-4 mr-2" />
+              Conectar Google Calendar
+            </Button>
+          )}
+          <Button onClick={() => setScheduleOpen(true)}>
+            <CalendarDays className="w-4 h-4 mr-2" />
+            Agendar Visita
+          </Button>
+        </div>
       </div>
 
       {/* Controls */}

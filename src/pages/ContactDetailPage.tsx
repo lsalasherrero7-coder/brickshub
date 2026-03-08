@@ -6,7 +6,7 @@ import {
 } from "@/hooks/useContactData";
 import { useContactInteractions, useCreateContactInteraction } from "@/hooks/useContactInteractions";
 import { usePropertyVisits } from "@/hooks/useVisitData";
-import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS, TEMPERATURE_TAGS, STATUS_TAGS, TEMPERATURE_TAG_COLORS, STATUS_TAG_COLORS } from "@/lib/types";
+import { LEAD_STATUSES, SOURCE_PORTALS, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS, TEMPERATURE_TAGS, STATUS_TAGS, TEMPERATURE_TAG_COLORS, STATUS_TAG_COLORS } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

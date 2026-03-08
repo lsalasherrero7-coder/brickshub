@@ -253,6 +253,60 @@ export type Database = {
           },
         ]
       }
+      google_calendar_event_map: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          google_event_id: string
+          id: string
+        }
+        Insert: {
+          calendar_id?: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          google_event_id: string
+          id?: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          google_event_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      google_calendar_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          id: string
+          refresh_token: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           address: string

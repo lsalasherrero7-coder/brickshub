@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useMarketingLead, useUpdateMarketingLead, useLeadInteractions, useCreateInteraction,
-  useCampaigns,
+  useCampaigns, useDeleteMarketingLead,
 } from "@/hooks/useMarketingLeadData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";

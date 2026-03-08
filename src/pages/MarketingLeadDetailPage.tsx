@@ -4,7 +4,6 @@ import {
   useMarketingLead, useUpdateMarketingLead, useLeadInteractions, useCreateInteraction,
   useCampaigns, useDeleteMarketingLead,
 } from "@/hooks/useMarketingLeadData";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,9 +18,10 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock, Trash2, MapPin, Building, FileText } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock, Trash2, MapPin, Building, FileText, UserPlus } from "lucide-react";
 import LinkedContactPanel from "@/components/LinkedContactPanel";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import AddContactModal, { type ContactPrefill } from "@/components/AddContactModal";
 
 const MKTG_LEAD_STATUSES = [
   { value: "nuevo", label: "Nuevo" },
@@ -71,6 +71,9 @@ export default function MarketingLeadDetailPage() {
   const [actionNote, setActionNote] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  // Add to contacts modal
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+
   if (isLoading || !lead) return <div className="p-8 animate-pulse"><div className="h-8 bg-muted rounded w-48" /></div>;
 
   const handleAddInteraction = async () => {
@@ -108,47 +111,27 @@ export default function MarketingLeadDetailPage() {
       return;
     }
 
-    if (newStatus === "convertido") {
-      // Create contact from lead
-      const { error } = await supabase.from("contacts").insert({
-        name: lead.name,
-        phone: lead.phone,
-        email: lead.email,
-        contact_type: "comprador",
-        source_portal: "manual",
-        lead_status: "contactado",
-      }).select().single();
-      if (!error) {
-        // Get the created contact id and link
-        const { data: newContact } = await supabase
-          .from("contacts")
-          .select("id")
-          .eq("name", lead.name)
-          .eq("phone", lead.phone || "")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (newContact) {
-          await updateLead.mutateAsync({ id: lead.id, status: newStatus, contact_id: newContact.id });
-          // Copy interactions as contact notes
-          if (interactions && interactions.length > 0) {
-            const notes = interactions.map((i) => ({
-              contact_id: newContact.id,
-              content: `[${INTERACTION_TYPES.find((t) => t.value === i.interaction_type)?.label || i.interaction_type}] ${i.notes || ""}`,
-            }));
-            await supabase.from("contact_notes").insert(notes);
-          }
-          queryClient.invalidateQueries({ queryKey: ["contacts"] });
-          toast({ title: "Lead convertido a contacto" });
-          return;
-        }
-      }
-    }
-
     await updateLead.mutateAsync({ id: lead.id, status: newStatus });
     toast({ title: "Estado actualizado" });
   };
+
+  const handleAddToContacts = () => {
+    const prefill: ContactPrefill = {
+      name: lead.name,
+      phone: lead.phone || "",
+      email: lead.email || "",
+      address: lead.address || "",
+      municipality: lead.municipality || "",
+      contact_type: "comprador",
+      source_portal: "manual",
+      marketing_lead_id: lead.id,
+    };
+    setContactModalOpen(true);
+    // We need to pass prefill through state - store it
+    setContactPrefill(prefill);
+  };
+
+  const [contactPrefill, setContactPrefill] = useState<ContactPrefill | undefined>();
 
   const campaignName = lead.campaign?.name || campaigns?.find((c) => c.id === lead.campaign_id)?.name || "—";
 
@@ -162,6 +145,11 @@ export default function MarketingLeadDetailPage() {
           <h1 className="font-display text-2xl font-bold">{lead.name}</h1>
           <p className="text-muted-foreground text-sm">Lead de marketing</p>
         </div>
+        {!lead.contact_id && (
+          <Button variant="outline" onClick={handleAddToContacts}>
+            <UserPlus className="w-4 h-4 mr-2" />Añadir a Contactos
+          </Button>
+        )}
         <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteOpen(true)}>
           <Trash2 className="w-4 h-4 mr-2" />Eliminar
         </Button>
@@ -310,13 +298,19 @@ export default function MarketingLeadDetailPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="¿Eliminar lead de marketing?"
-        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado (si existe) no será eliminado."
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
         onConfirm={async () => {
           await deleteMarketingLead.mutateAsync(lead.id);
           toast({ title: "Lead eliminado" });
           navigate("/leads");
         }}
         isPending={deleteMarketingLead.isPending}
+      />
+
+      <AddContactModal
+        open={contactModalOpen}
+        onOpenChange={setContactModalOpen}
+        prefill={contactPrefill}
       />
     </div>
   );

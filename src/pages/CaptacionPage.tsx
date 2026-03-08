@@ -475,9 +475,16 @@ export default function CaptacionPage() {
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
         title="¿Eliminar lead?"
-        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado no será eliminado."
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
         onConfirm={handleDeleteLead}
         isPending={deleteLead.isPending}
+      />
+
+      {/* Add to Contacts Modal */}
+      <AddContactModal
+        open={contactModalOpen}
+        onOpenChange={setContactModalOpen}
+        prefill={contactPrefill}
       />
     </div>
   );

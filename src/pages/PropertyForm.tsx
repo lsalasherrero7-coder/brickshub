@@ -135,11 +135,6 @@ export default function PropertyForm() {
         toast.success("Propiedad actualizada correctamente");
       }
 
-      // Auto-sync owner to contacts
-      if (form.owner_name) {
-        await syncOwnerToContacts(savedPropertyId, form.owner_name, form.owner_phone, form.owner_email, form.address);
-        queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      }
     } catch (err: any) {
       toast.error(err.message || "Error al guardar");
     }

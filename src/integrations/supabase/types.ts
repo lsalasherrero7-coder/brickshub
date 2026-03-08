@@ -320,6 +320,7 @@ export type Database = {
       }
       marketing_leads: {
         Row: {
+          address: string | null
           assigned_agent_id: string | null
           campaign_id: string
           contact_id: string | null
@@ -335,6 +336,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           assigned_agent_id?: string | null
           campaign_id: string
           contact_id?: string | null
@@ -350,6 +352,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           assigned_agent_id?: string | null
           campaign_id?: string
           contact_id?: string | null

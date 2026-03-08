@@ -301,6 +301,7 @@ export default function CaptacionPage() {
                 <TableHead>Portal</TableHead>
                  <TableHead>Estado</TableHead>
                  <TableHead className="w-[80px]"></TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (

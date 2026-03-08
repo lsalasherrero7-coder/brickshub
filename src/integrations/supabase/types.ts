@@ -327,6 +327,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          municipality: string | null
           name: string
           next_action_date: string | null
           next_action_note: string | null
@@ -334,6 +335,7 @@ export type Database = {
           phone: string | null
           status: string
           updated_at: string
+          valuation_reason: string | null
         }
         Insert: {
           address?: string | null
@@ -343,6 +345,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          municipality?: string | null
           name: string
           next_action_date?: string | null
           next_action_note?: string | null
@@ -350,6 +353,7 @@ export type Database = {
           phone?: string | null
           status?: string
           updated_at?: string
+          valuation_reason?: string | null
         }
         Update: {
           address?: string | null
@@ -359,6 +363,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          municipality?: string | null
           name?: string
           next_action_date?: string | null
           next_action_note?: string | null
@@ -366,6 +371,7 @@ export type Database = {
           phone?: string | null
           status?: string
           updated_at?: string
+          valuation_reason?: string | null
         }
         Relationships: [
           {

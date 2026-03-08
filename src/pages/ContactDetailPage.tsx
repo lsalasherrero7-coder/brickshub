@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useContact, useUpdateContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useBuyerProfile, useSuggestedProperties } from "@/hooks/useContactData";
+import {
+  useContact, useUpdateContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useDeleteContactNote,
+  useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useDeleteContactTask,
+  useBuyerProfile, useSuggestedProperties, useDeleteContact,
+} from "@/hooks/useContactData";
 import { usePropertyVisits } from "@/hooks/useVisitData";
 import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES, CONTACT_TYPES, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +21,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import StatusBadge from "@/components/StatusBadge";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 
 export default function ContactDetailPage() {
   const { id } = useParams();
@@ -36,14 +41,20 @@ export default function ContactDetailPage() {
   const updateContact = useUpdateContact();
   const createNote = useCreateContactNote();
   const updateNote = useUpdateContactNote();
+  const deleteNote = useDeleteContactNote();
   const createTask = useCreateContactTask();
   const updateTaskStatus = useUpdateContactTaskStatus();
+  const deleteTask = useDeleteContactTask();
+  const deleteContact = useDeleteContact();
 
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", description: "", due_date: "", due_time: "10:00" });
+  const [deleteContactOpen, setDeleteContactOpen] = useState(false);
+  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
 
   if (isLoading) {
     return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;
@@ -66,6 +77,13 @@ export default function ContactDetailPage() {
     toast({ title: "Nota actualizada" });
   };
 
+  const handleDeleteNote = async () => {
+    if (!deleteNoteId) return;
+    await deleteNote.mutateAsync({ id: deleteNoteId, contact_id: contact.id });
+    setDeleteNoteId(null);
+    toast({ title: "Nota eliminada" });
+  };
+
   const handleAddTask = async () => {
     if (!newTask.title.trim() || !newTask.due_date) return;
     const dueDateTime = `${newTask.due_date}T${newTask.due_time}:00`;
@@ -80,6 +98,19 @@ export default function ContactDetailPage() {
     await updateTaskStatus.mutateAsync({ id: taskId, status: newStatus });
   };
 
+  const handleDeleteTask = async () => {
+    if (!deleteTaskId) return;
+    await deleteTask.mutateAsync({ id: deleteTaskId, contact_id: contact.id });
+    setDeleteTaskId(null);
+    toast({ title: "Tarea eliminada" });
+  };
+
+  const handleDeleteContact = async (cascades: string[]) => {
+    await deleteContact.mutateAsync({ id: contact.id, cascades });
+    toast({ title: "Contacto eliminado" });
+    navigate("/contactos");
+  };
+
   const statusLabel = LEAD_STATUSES.find((s) => s.value === contact.lead_status)?.label || contact.lead_status;
   const portalLabel = SOURCE_PORTALS.find((s) => s.value === contact.source_portal)?.label || contact.source_portal;
   const isBuyer = contact.contact_type === "comprador";
@@ -92,7 +123,7 @@ export default function ContactDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/contactos")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isBuyer ? "bg-info/10" : "bg-primary/10"}`}>
             {isBuyer ? <ShoppingCart className="w-5 h-5 text-info" /> : <Home className="w-5 h-5 text-primary" />}
           </div>
@@ -104,6 +135,9 @@ export default function ContactDetailPage() {
             </div>
           </div>
         </div>
+        <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteContactOpen(true)}>
+          <Trash2 className="w-4 h-4 mr-2" />Eliminar
+        </Button>
       </div>
 
       {/* Main Info Card */}
@@ -141,13 +175,9 @@ export default function ContactDetailPage() {
                   toast({ title: "Estado actualizado" });
                 }}
               >
-                <SelectTrigger className="w-[180px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="w-[180px] h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {LEAD_STATUSES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
+                  {LEAD_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -233,13 +263,16 @@ export default function ContactDetailPage() {
                           <p className="text-sm whitespace-pre-wrap">{note.content}</p>
                           <div className="flex items-center gap-2 mt-2">
                             <CalendarIcon className="w-3 h-3 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground flex-1">
                               {format(new Date(note.created_at), "dd MMM yyyy HH:mm", { locale: es })}
                               {note.updated_at !== note.created_at && (
                                 <span className="ml-1 italic">(editado {format(new Date(note.updated_at), "dd MMM yyyy HH:mm", { locale: es })})</span>
                               )}
                             </p>
                             <Button size="sm" variant="ghost" onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}>Editar</Button>
+                            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteNoteId(note.id)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -278,6 +311,9 @@ export default function ContactDetailPage() {
                       <Badge variant={task.status === "completada" ? "secondary" : "outline"} className="text-xs">
                         {TASK_STATUSES.find((s) => s.value === task.status)?.label || task.status}
                       </Badge>
+                      <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" onClick={() => setDeleteTaskId(task.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -288,7 +324,6 @@ export default function ContactDetailPage() {
           </Card>
         </TabsContent>
 
-        {/* Visits Tab */}
         {contact.property_id && (
           <TabsContent value="visitas">
             <Card>
@@ -380,6 +415,37 @@ export default function ContactDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete contact dialog */}
+      <DeleteConfirmDialog
+        open={deleteContactOpen}
+        onOpenChange={setDeleteContactOpen}
+        title="¿Eliminar contacto?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
+        cascadeOptions={[
+          { key: "notes", label: "Notas del contacto", defaultChecked: true },
+          { key: "tasks", label: "Tareas del contacto", defaultChecked: true },
+          { key: "buyer_profile", label: "Perfil de comprador", defaultChecked: true },
+        ]}
+        onConfirm={handleDeleteContact}
+        isPending={deleteContact.isPending}
+      />
+
+      {/* Delete note dialog */}
+      <DeleteConfirmDialog
+        open={!!deleteNoteId}
+        onOpenChange={(open) => !open && setDeleteNoteId(null)}
+        title="¿Eliminar nota?"
+        onConfirm={handleDeleteNote}
+      />
+
+      {/* Delete task dialog */}
+      <DeleteConfirmDialog
+        open={!!deleteTaskId}
+        onOpenChange={(open) => !open && setDeleteTaskId(null)}
+        title="¿Eliminar tarea?"
+        onConfirm={handleDeleteTask}
+      />
     </div>
   );
 }

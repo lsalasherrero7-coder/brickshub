@@ -19,7 +19,7 @@ export function useGoogleCalendarStatus() {
 export function useGoogleCalendarConnect() {
   const connect = async () => {
     // Always use the published URL so the redirect URI matches Google Cloud config
-    const publishedOrigin = "https://inmogest.lovable.app";
+    const publishedOrigin = "https://brickshub.lovable.app";
     const { data, error } = await supabase.functions.invoke("google-calendar-auth", {
       body: { action: "connect", origin: publishedOrigin },
     });

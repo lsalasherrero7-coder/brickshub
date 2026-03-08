@@ -128,10 +128,23 @@ export default function CalendarPage() {
           <h1 className="font-display text-2xl font-bold">Calendario</h1>
           <p className="text-muted-foreground mt-1">Visitas programadas</p>
         </div>
-        <Button onClick={() => setScheduleOpen(true)}>
-          <CalendarDays className="w-4 h-4 mr-2" />
-          Agendar Visita
-        </Button>
+        <div className="flex items-center gap-2">
+          {gcalStatus?.connected ? (
+            <Button variant="outline" size="sm" onClick={disconnectGcal} className="text-destructive border-destructive/30">
+              <Unplug className="w-4 h-4 mr-1" />
+              Desconectar Google Calendar
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={connectGcal}>
+              <CalendarDays className="w-4 h-4 mr-2" />
+              Conectar Google Calendar
+            </Button>
+          )}
+          <Button onClick={() => setScheduleOpen(true)}>
+            <CalendarDays className="w-4 h-4 mr-2" />
+            Agendar Visita
+          </Button>
+        </div>
       </div>
 
       {/* Controls */}

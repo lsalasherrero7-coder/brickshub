@@ -265,6 +265,38 @@ export default function MarketingLeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit lead dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) setEditOpen(false); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Lead</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Nombre *</Label><Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} /></div>
+            <div><Label>Teléfono</Label><Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} /></div>
+            <div><Label>Email</Label><Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} /></div>
+            <div>
+              <Label>Campaña *</Label>
+              <Select value={editForm.campaign_id} onValueChange={(v) => setEditForm({ ...editForm, campaign_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar campaña" /></SelectTrigger>
+                <SelectContent>
+                  {(campaigns || []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={handleEditLead} disabled={updateMarketingLead.isPending}>Guardar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete lead dialog */}
+      <DeleteConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="¿Eliminar lead de marketing?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado (si existe) no será eliminado."
+        onConfirm={handleDeleteLead}
+        isPending={deleteMarketingLead.isPending}
+      />
     </div>
   );
 }

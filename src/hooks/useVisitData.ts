@@ -76,6 +76,32 @@ export function useUpdateVisitStatus() {
   });
 }
 
+export function useUpdateVisit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: {
+      id: string;
+      client_first_name?: string;
+      client_last_name?: string;
+      client_phone?: string | null;
+      visit_date?: string;
+      notes?: string | null;
+    }) => {
+      const { data, error } = await supabase
+        .from("visits")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["visits"] });
+    },
+  });
+}
+
 export function useDeleteVisit() {
   const qc = useQueryClient();
   return useMutation({

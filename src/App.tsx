@@ -13,6 +13,7 @@ import ContactosPage from "@/pages/ContactosPage";
 import ContactDetailPage from "@/pages/ContactDetailPage";
 import MarketingLeadsPage from "@/pages/MarketingLeadsPage";
 import MarketingLeadDetailPage from "@/pages/MarketingLeadDetailPage";
+import HipotecaPage from "@/pages/HipotecaPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/leads" element={<MarketingLeadsPage />} />
             <Route path="/leads/:id" element={<MarketingLeadDetailPage />} />
             <Route path="/calendario" element={<CalendarPage />} />
+            <Route path="/hipoteca" element={<HipotecaPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

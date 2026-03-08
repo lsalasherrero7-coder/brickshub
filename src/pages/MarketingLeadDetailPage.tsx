@@ -193,9 +193,7 @@ export default function MarketingLeadDetailPage() {
               <span>Entrada: {format(parseISO(lead.created_at), "dd/MM/yyyy", { locale: es })}</span>
             </div>
             {lead.contact_id && (
-              <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => navigate(`/contactos/${lead.contact_id}`)}>
-                Ver contacto vinculado
-              </Button>
+              <LinkedContactPanel contactId={lead.contact_id} />
             )}
           </CardContent>
         </Card>

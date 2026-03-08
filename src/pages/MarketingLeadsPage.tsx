@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useMarketingLeads, useCampaigns, useCreateMarketingLead, useCreateCampaign, useDeleteCampaign } from "@/hooks/useMarketingLeadData";
+import { useMarketingLeads, useCampaigns, useCreateMarketingLead, useCreateCampaign, useDeleteCampaign, useDeleteMarketingLead, useUpdateMarketingLead } from "@/hooks/useMarketingLeadData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Search, Settings, Trash2, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil } from "lucide-react";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 const MKTG_LEAD_STATUSES = [
   { value: "nuevo", label: "Nuevo" },

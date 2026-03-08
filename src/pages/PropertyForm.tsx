@@ -80,11 +80,12 @@ export default function PropertyForm() {
 
   const createMutation = useCreateProperty();
   const updateMutation = useUpdateProperty();
-  const deleteMutation = useDeleteProperty();
 
   const [form, setForm] = useState<Record<string, any>>({});
   const [initialized, setInitialized] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (existing && !initialized) {
     setForm(existing);

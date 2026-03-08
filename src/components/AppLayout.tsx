@@ -12,6 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { to: "/leads", label: "Leads", icon: Megaphone },
     { to: "/contactos", label: "Contactos", icon: Users },
     { to: "/calendario", label: "Calendario", icon: CalendarDays },
+    { to: "/hipoteca", label: "Cálculo Hipoteca", icon: Calculator },
   ];
 
   return (

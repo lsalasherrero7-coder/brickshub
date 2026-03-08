@@ -14,6 +14,7 @@ import ContactDetailPage from "@/pages/ContactDetailPage";
 import MarketingLeadsPage from "@/pages/MarketingLeadsPage";
 import MarketingLeadDetailPage from "@/pages/MarketingLeadDetailPage";
 import HipotecaPage from "@/pages/HipotecaPage";
+import GoogleCallbackPage from "@/pages/GoogleCallbackPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/leads/:id" element={<MarketingLeadDetailPage />} />
             <Route path="/calendario" element={<CalendarPage />} />
             <Route path="/hipoteca" element={<HipotecaPage />} />
+            <Route path="/google-callback" element={<GoogleCallbackPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

@@ -15,15 +15,12 @@ Deno.serve(async (req) => {
     const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID");
     if (!GOOGLE_CLIENT_ID) throw new Error("GOOGLE_CLIENT_ID not configured");
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    if (!SUPABASE_URL) throw new Error("SUPABASE_URL not configured");
-
     const { action, origin } = await req.json();
 
     // Check connection status
     if (action === "status") {
       const supabase = createClient(
-        SUPABASE_URL,
+        Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
       const { data } = await supabase
@@ -41,7 +38,7 @@ Deno.serve(async (req) => {
     // Disconnect
     if (action === "disconnect") {
       const supabase = createClient(
-        SUPABASE_URL,
+        Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
       await supabase.from("google_calendar_tokens").delete().neq("id", "00000000-0000-0000-0000-000000000000");
@@ -52,9 +49,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate OAuth URL
-    const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-calendar-callback`;
-    const state = encodeURIComponent(origin || "");
+    // Generate OAuth URL — redirect to the app's frontend route
+    const REDIRECT_URI = `${origin}/google-callback`;
     const scopes = [
       "https://www.googleapis.com/auth/calendar.events",
     ].join(" ");
@@ -66,8 +62,7 @@ Deno.serve(async (req) => {
       `&response_type=code` +
       `&scope=${encodeURIComponent(scopes)}` +
       `&access_type=offline` +
-      `&prompt=consent` +
-      `&state=${state}`;
+      `&prompt=consent`;
 
     return new Response(
       JSON.stringify({ url: authUrl }),

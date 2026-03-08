@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useProperty, useCreateProperty, useUpdateProperty, useDeleteProperty } from "@/hooks/usePropertyData";
+import { useProperty, useCreateProperty, useUpdateProperty } from "@/hooks/usePropertyData";
 import { PROPERTY_TYPES, PROPERTY_STATUSES, PAMPLONA_ZONES } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,10 +17,7 @@ import PropertyDocuments from "@/components/PropertyDocuments";
 import PropertyPhotos from "@/components/PropertyPhotos";
 import PropertyActivity from "@/components/PropertyActivity";
 import ScheduleVisitModal from "@/components/ScheduleVisitModal";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 async function syncOwnerToContacts(propertyId: string, ownerName: string | null, ownerPhone: string | null, ownerEmail: string | null, address: string) {
   if (!ownerName) return;

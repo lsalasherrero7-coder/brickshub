@@ -65,14 +65,7 @@ export default function ContactDetailPage() {
   const deleteContact = useDeleteContact();
   const createInteraction = useCreateContactInteraction();
 
-  const [newNote, setNewNote] = useState("");
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteContent, setEditingNoteContent] = useState("");
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", description: "", due_date: "", due_time: "10:00" });
   const [deleteContactOpen, setDeleteContactOpen] = useState(false);
-  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
-  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
 
   // Next action state (vendedor)
   const [actionType, setActionType] = useState("");

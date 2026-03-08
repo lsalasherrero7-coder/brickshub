@@ -27,11 +27,27 @@ export default function CalendarPage() {
   const { data: properties } = useProperties();
   const { data: contactTasks } = useAllContactTasks();
   const { data: marketingLeads } = useMarketingLeads();
+  const { data: gcalStatus, refetch: refetchGcal } = useGoogleCalendarStatus();
+  const { connect: connectGcal } = useGoogleCalendarConnect();
+  const { disconnect: disconnectGcal } = useGoogleCalendarDisconnect();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week">("month");
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const updateStatus = useUpdateVisitStatus();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const gcal = searchParams.get("gcal");
+    if (gcal === "success") {
+      toast.success("Google Calendar conectado correctamente");
+      refetchGcal();
+      setSearchParams({}, { replace: true });
+    } else if (gcal === "error") {
+      toast.error("Error al conectar Google Calendar");
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, refetchGcal, setSearchParams]);
 
   const propertyMap = useMemo(() => {
     const map = new Map<string, { address: string; id: string }>();

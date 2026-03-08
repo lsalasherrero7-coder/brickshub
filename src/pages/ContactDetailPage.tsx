@@ -472,25 +472,6 @@ export default function ContactDetailPage() {
         )}
       </Tabs>
 
-      {/* New Task Dialog */}
-      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Nueva Tarea</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>Título *</Label><Input value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} /></div>
-            <div><Label>Descripción</Label><Textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Fecha *</Label><Input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} /></div>
-              <div><Label>Hora</Label><Input type="time" value={newTask.due_time} onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })} /></div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddTask} disabled={!newTask.title.trim() || !newTask.due_date}>Crear Tarea</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete contact dialog */}
       <DeleteConfirmDialog
         open={deleteContactOpen}

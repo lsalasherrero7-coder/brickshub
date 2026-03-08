@@ -55,8 +55,6 @@ export default function ContactDetailPage() {
   const { toast } = useToast();
 
   const { data: contact, isLoading } = useContact(id);
-  const { data: notes } = useContactNotes(id);
-  const { data: tasks } = useContactTasks(id);
   const { data: buyerProfile } = useBuyerProfile(id);
   const { data: suggestedProperties } = useSuggestedProperties(
     contact?.contact_type === "comprador" ? id : undefined

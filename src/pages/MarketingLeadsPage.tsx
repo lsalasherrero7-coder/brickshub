@@ -12,8 +12,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil } from "lucide-react";
+import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil, UserPlus } from "lucide-react";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import AddContactModal, { type ContactPrefill } from "@/components/AddContactModal";
+import type { MarketingLead } from "@/hooks/useMarketingLeadData";
 
 const MKTG_LEAD_STATUSES = [
   { value: "nuevo", label: "Nuevo" },

@@ -54,6 +54,9 @@ export default function MarketingLeadsPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", campaign_id: "" });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ id: "", name: "", phone: "", email: "", campaign_id: "" });
 
   const filtered = useMemo(() => {
     if (!leads) return [];

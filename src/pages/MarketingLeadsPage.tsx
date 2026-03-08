@@ -40,6 +40,8 @@ export default function MarketingLeadsPage() {
   const createLead = useCreateMarketingLead();
   const createCampaign = useCreateCampaign();
   const deleteCampaign = useDeleteCampaign();
+  const deleteMarketingLead = useDeleteMarketingLead();
+  const updateMarketingLead = useUpdateMarketingLead();
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");

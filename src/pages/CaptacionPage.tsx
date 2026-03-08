@@ -19,10 +19,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ExternalLink, Link2, CalendarIcon, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, ExternalLink, Link2, CalendarIcon, Pencil, Trash2, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import AddContactModal, { type ContactPrefill } from "@/components/AddContactModal";
 
 const statusColors: Record<string, string> = {
   no_contactado: "bg-muted text-muted-foreground",

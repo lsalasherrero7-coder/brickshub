@@ -25,7 +25,7 @@ import StatusBadge from "@/components/StatusBadge";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import InlineTagSelect from "@/components/InlineTagSelect";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 
 const ACTION_TYPES = [
   { value: "Llamar", label: "Llamar" },

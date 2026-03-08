@@ -212,6 +212,37 @@ export default function CaptacionPage() {
     }
   };
 
+  const handleEditLead = async () => {
+    if (!editLead) return;
+    try {
+      await updateLead.mutateAsync({
+        id: editLead.id,
+        address: editLead.address,
+        listing_url: editLead.listing_url,
+        advertiser_type: editLead.advertiser_type,
+        name: editLead.name,
+        phone: editLead.phone,
+        source_portal: editLead.source_portal,
+      });
+      setEditOpen(false);
+      setEditLead(null);
+      toast({ title: "Lead actualizado" });
+    } catch {
+      toast({ title: "Error", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteLead = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteLead.mutateAsync(deleteId);
+      toast({ title: "Lead eliminado" });
+    } catch {
+      toast({ title: "Error al eliminar", variant: "destructive" });
+    }
+    setDeleteId(null);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">

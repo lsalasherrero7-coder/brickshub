@@ -106,40 +106,9 @@ export default function CaptacionPage() {
 
   const executeStatusChange = async (lead: Lead, newStatus: string) => {
     const leadId = lead.id;
-    const oldStatus = lead.lead_status;
 
     try {
       await updateStatus.mutateAsync({ id: leadId, lead_status: newStatus });
-
-      // Auto-create contact if moving from no_contactado to any other status
-      if (oldStatus === "no_contactado" && newStatus !== "no_contactado") {
-        const { data: existingContact } = await supabase
-          .from("contacts")
-          .select("id")
-          .eq("lead_id", leadId)
-          .maybeSingle();
-
-        if (!existingContact) {
-          await supabase.from("contacts").insert({
-            name: lead.name || "Sin nombre",
-            phone: lead.phone,
-            address: lead.address,
-            lead_status: newStatus,
-            source_portal: lead.source_portal,
-            lead_id: leadId,
-          });
-          queryClient.invalidateQueries({ queryKey: ["contacts"] });
-          toast({ title: "Contacto creado", description: `${lead.name || "Sin nombre"} añadido a Contactos` });
-        } else {
-          // Update existing contact status
-          await supabase.from("contacts").update({ lead_status: newStatus }).eq("lead_id", leadId);
-          queryClient.invalidateQueries({ queryKey: ["contacts"] });
-        }
-      } else if (oldStatus !== "no_contactado") {
-        // Update contact status if it exists
-        await supabase.from("contacts").update({ lead_status: newStatus }).eq("lead_id", leadId);
-        queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      }
 
       // Auto-create property when status is "captado"
       if (newStatus === "captado") {
@@ -155,18 +124,27 @@ export default function CaptacionPage() {
           .single();
 
         if (!error && newProperty) {
-          // Link property to lead and contact
           await supabase.from("leads").update({ property_id: newProperty.id }).eq("id", leadId);
-          await supabase.from("contacts").update({ property_id: newProperty.id }).eq("lead_id", leadId);
           queryClient.invalidateQueries({ queryKey: ["leads"] });
-          queryClient.invalidateQueries({ queryKey: ["contacts"] });
           queryClient.invalidateQueries({ queryKey: ["properties"] });
-          toast({ title: "Propiedad creada", description: `"${lead.address}" añadida al portfolio con ${lead.name || "propietario"} como contacto.` });
+          toast({ title: "Propiedad creada", description: `"${lead.address}" añadida al portfolio.` });
         }
       }
     } catch {
       toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" });
     }
+  };
+
+  const handleAddToContacts = (lead: Lead) => {
+    setContactPrefill({
+      name: lead.name || "",
+      phone: lead.phone || "",
+      address: lead.address,
+      contact_type: "vendedor",
+      source_portal: lead.source_portal,
+      lead_id: lead.id,
+    });
+    setContactModalOpen(true);
   };
 
   const handleConfirmVisit = async () => {

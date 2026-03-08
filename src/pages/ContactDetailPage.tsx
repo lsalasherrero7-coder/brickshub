@@ -439,8 +439,6 @@ export default function ContactDetailPage() {
         title="¿Eliminar contacto?"
         description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
         cascadeOptions={[
-          { key: "notes", label: "Notas del contacto", defaultChecked: true },
-          { key: "tasks", label: "Tareas del contacto", defaultChecked: true },
           { key: "buyer_profile", label: "Perfil de comprador", defaultChecked: true },
         ]}
         onConfirm={handleDeleteContact}

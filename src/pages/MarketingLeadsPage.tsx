@@ -12,8 +12,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil } from "lucide-react";
+import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil, UserPlus } from "lucide-react";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import AddContactModal, { type ContactPrefill } from "@/components/AddContactModal";
+import type { MarketingLead } from "@/hooks/useMarketingLeadData";
 
 const MKTG_LEAD_STATUSES = [
   { value: "nuevo", label: "Nuevo" },
@@ -57,6 +59,22 @@ export default function MarketingLeadsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ id: "", name: "", phone: "", email: "", campaign_id: "" });
+
+  // Add to contacts modal
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactPrefill, setContactPrefill] = useState<ContactPrefill | undefined>();
+
+  const handleAddToContacts = (lead: MarketingLead) => {
+    setContactPrefill({
+      name: lead.name || "",
+      phone: lead.phone || "",
+      email: lead.email || "",
+      address: lead.address || "",
+      municipality: lead.municipality || "",
+      marketing_lead_id: lead.id,
+    });
+    setContactModalOpen(true);
+  };
 
   const filtered = useMemo(() => {
     if (!leads) return [];
@@ -205,6 +223,11 @@ export default function MarketingLeadsPage() {
                      </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {!lead.contact_id && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Añadir a Contactos" onClick={() => handleAddToContacts(lead)}>
+                            <UserPlus className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditForm({ id: lead.id, name: lead.name, phone: lead.phone || "", email: lead.email || "", campaign_id: lead.campaign_id }); setEditOpen(true); }}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
@@ -296,6 +319,13 @@ export default function MarketingLeadsPage() {
         description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado (si existe) no será eliminado."
         onConfirm={handleDeleteLead}
         isPending={deleteMarketingLead.isPending}
+      />
+
+      {/* Add to Contacts Modal */}
+      <AddContactModal
+        open={contactModalOpen}
+        onOpenChange={setContactModalOpen}
+        prefill={contactPrefill}
       />
     </div>
   );

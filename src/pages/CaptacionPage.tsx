@@ -39,6 +39,8 @@ export default function CaptacionPage() {
   const { data: properties } = useProperties();
   const createLead = useCreateLead();
   const updateStatus = useUpdateLeadStatus();
+  const updateLead = useUpdateLead();
+  const deleteLead = useDeleteLead();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -49,6 +51,9 @@ export default function CaptacionPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [newLead, setNewLead] = useState({ address: "", listing_url: "", advertiser_type: "propietario", name: "", phone: "", source_portal: "manual" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editLead, setEditLead] = useState<Lead | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Visit scheduling modal state
   const [visitModalOpen, setVisitModalOpen] = useState(false);

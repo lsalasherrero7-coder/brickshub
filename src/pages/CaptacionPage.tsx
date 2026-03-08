@@ -304,7 +304,7 @@ export default function CaptacionPage() {
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
               ) : (
                 filtered.map((lead) => {
                   const matchedPropertyId = propertyMatch.get(lead.address.toLowerCase().trim());

@@ -85,46 +85,8 @@ export default function ContactDetailPage() {
     return <div className="text-center py-12 text-muted-foreground">Contacto no encontrado</div>;
   }
 
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
-    await createNote.mutateAsync({ contact_id: contact.id, content: newNote });
-    setNewNote("");
-    toast({ title: "Nota añadida" });
-  };
 
-  const handleUpdateNote = async (noteId: string) => {
-    await updateNote.mutateAsync({ id: noteId, content: editingNoteContent, contact_id: contact.id });
-    setEditingNoteId(null);
-    toast({ title: "Nota actualizada" });
-  };
 
-  const handleDeleteNote = async () => {
-    if (!deleteNoteId) return;
-    await deleteNote.mutateAsync({ id: deleteNoteId, contact_id: contact.id });
-    setDeleteNoteId(null);
-    toast({ title: "Nota eliminada" });
-  };
-
-  const handleAddTask = async () => {
-    if (!newTask.title.trim() || !newTask.due_date) return;
-    const dueDateTime = `${newTask.due_date}T${newTask.due_time}:00`;
-    await createTask.mutateAsync({ contact_id: contact.id, title: newTask.title, description: newTask.description || undefined, due_date: dueDateTime });
-    setTaskDialogOpen(false);
-    setNewTask({ title: "", description: "", due_date: "", due_time: "10:00" });
-    toast({ title: "Tarea creada", description: "Se ha añadido al calendario" });
-  };
-
-  const handleToggleTask = async (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "pendiente" ? "completada" : "pendiente";
-    await updateTaskStatus.mutateAsync({ id: taskId, status: newStatus });
-  };
-
-  const handleDeleteTask = async () => {
-    if (!deleteTaskId) return;
-    await deleteTask.mutateAsync({ id: deleteTaskId, contact_id: contact.id });
-    setDeleteTaskId(null);
-    toast({ title: "Tarea eliminada" });
-  };
 
   const handleDeleteContact = async (cascades: string[]) => {
     await deleteContact.mutateAsync({ id: contact.id, cascades });

@@ -105,6 +105,19 @@ export function useUpdateContactNote() {
   });
 }
 
+export function useDeleteContactNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, contact_id }: { id: string; contact_id: string }) => {
+      const { error } = await supabase.from("contact_notes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["contact_notes", vars.contact_id] });
+    },
+  });
+}
+
 // Tasks
 export function useContactTasks(contactId: string | undefined) {
   return useQuery({

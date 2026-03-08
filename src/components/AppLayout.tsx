@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const { signOut, user } = useAuth();
 
   const navItems = [
     { to: "/", label: "Panel", icon: LayoutDashboard },
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { to: "/contactos", label: "Contactos", icon: Users },
     { to: "/calendario", label: "Calendario", icon: CalendarDays },
     { to: "/hipoteca", label: "Cálculo Hipoteca", icon: Calculator },
+    { to: "/usuarios", label: "Usuarios", icon: UserPlus },
   ];
 
   return (
@@ -50,13 +52,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 space-y-2 border-t border-sidebar-border">
           <Link to="/propiedades/nueva">
             <Button className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90">
               <Plus className="w-4 h-4 mr-2" />
               Nueva Propiedad
             </Button>
           </Link>
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-xs text-sidebar-foreground/50 truncate">{user?.email}</span>
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground">
+              <LogOut className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
       </aside>
       <main className="flex-1 overflow-auto">

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  useContact, useUpdateContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useDeleteContactNote,
-  useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useDeleteContactTask,
+  useContact, useUpdateContact,
   useBuyerProfile, useSuggestedProperties, useDeleteContact,
 } from "@/hooks/useContactData";
 import { useContactInteractions, useCreateContactInteraction } from "@/hooks/useContactInteractions";

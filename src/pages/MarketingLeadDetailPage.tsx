@@ -73,6 +73,7 @@ export default function MarketingLeadDetailPage() {
 
   // Add to contacts modal
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactPrefill, setContactPrefill] = useState<ContactPrefill | undefined>();
 
   if (isLoading || !lead) return <div className="p-8 animate-pulse"><div className="h-8 bg-muted rounded w-48" /></div>;
 

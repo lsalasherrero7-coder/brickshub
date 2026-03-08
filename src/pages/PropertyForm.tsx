@@ -145,13 +145,32 @@ export default function PropertyForm() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (cascades: string[]) => {
+    setDeleting(true);
     try {
-      await deleteMutation.mutateAsync(id!);
+      if (cascades.includes("visits")) {
+        await supabase.from("visits").delete().eq("property_id", id!);
+      }
+      if (cascades.includes("documents")) {
+        await supabase.from("property_documents").delete().eq("property_id", id!);
+      }
+      if (cascades.includes("photos")) {
+        await supabase.from("property_photos").delete().eq("property_id", id!);
+      }
+      if (cascades.includes("contacts")) {
+        await supabase.from("contacts").update({ property_id: null }).eq("property_id", id!);
+      }
+      const { error } = await supabase.from("properties").delete().eq("id", id!);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
       toast.success("Propiedad eliminada");
       navigate("/propiedades");
     } catch (err: any) {
       toast.error(err.message || "Error al eliminar");
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 

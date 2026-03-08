@@ -320,6 +320,13 @@ export default function MarketingLeadsPage() {
         onConfirm={handleDeleteLead}
         isPending={deleteMarketingLead.isPending}
       />
+
+      {/* Add to Contacts Modal */}
+      <AddContactModal
+        open={contactModalOpen}
+        onOpenChange={setContactModalOpen}
+        prefill={contactPrefill}
+      />
     </div>
   );
 }

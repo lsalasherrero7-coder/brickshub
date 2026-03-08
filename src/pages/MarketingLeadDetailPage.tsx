@@ -293,6 +293,19 @@ export default function MarketingLeadDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="¿Eliminar lead de marketing?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado (si existe) no será eliminado."
+        onConfirm={async () => {
+          await deleteMarketingLead.mutateAsync(lead.id);
+          toast({ title: "Lead eliminado" });
+          navigate("/leads");
+        }}
+        isPending={deleteMarketingLead.isPending}
+      />
     </div>
   );
 }

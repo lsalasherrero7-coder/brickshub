@@ -33,7 +33,7 @@ export default function LoginPage() {
           <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto">
             <Building2 className="w-7 h-7 text-primary-foreground" />
           </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">InmoGest</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">BrickHub</h1>
           <p className="text-sm text-muted-foreground">
             Aplicación privada · Solo acceso con invitación
           </p>

@@ -487,21 +487,6 @@ export default function ContactDetailPage() {
         isPending={deleteContact.isPending}
       />
 
-      {/* Delete note dialog */}
-      <DeleteConfirmDialog
-        open={!!deleteNoteId}
-        onOpenChange={(open) => !open && setDeleteNoteId(null)}
-        title="¿Eliminar nota?"
-        onConfirm={handleDeleteNote}
-      />
-
-      {/* Delete task dialog */}
-      <DeleteConfirmDialog
-        open={!!deleteTaskId}
-        onOpenChange={(open) => !open && setDeleteTaskId(null)}
-        title="¿Eliminar tarea?"
-        onConfirm={handleDeleteTask}
-      />
     </div>
   );
 }

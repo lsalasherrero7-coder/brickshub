@@ -94,6 +94,26 @@ export default function MarketingLeadsPage() {
     setNewCampaignName("");
   };
 
+  const handleEditLead = async () => {
+    if (!editForm.name || !editForm.campaign_id) return;
+    await updateMarketingLead.mutateAsync({
+      id: editForm.id,
+      name: editForm.name,
+      phone: editForm.phone || null,
+      email: editForm.email || null,
+      campaign_id: editForm.campaign_id,
+    });
+    toast({ title: "Lead actualizado" });
+    setEditOpen(false);
+  };
+
+  const handleDeleteLead = async () => {
+    if (!deleteId) return;
+    await deleteMarketingLead.mutateAsync(deleteId);
+    toast({ title: "Lead eliminado" });
+    setDeleteId(null);
+  };
+
   if (isLoading) return <div className="p-8 animate-pulse"><div className="h-8 bg-muted rounded w-48 mb-4" /><div className="h-64 bg-muted rounded" /></div>;
 
   return (

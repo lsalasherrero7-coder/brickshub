@@ -69,6 +69,7 @@ export default function MarketingLeadDetailPage() {
   const [actionDate, setActionDate] = useState<Date | undefined>();
   const [actionTime, setActionTime] = useState("10:00");
   const [actionNote, setActionNote] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading || !lead) return <div className="p-8 animate-pulse"><div className="h-8 bg-muted rounded w-48" /></div>;
 

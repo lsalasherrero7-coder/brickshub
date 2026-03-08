@@ -210,7 +210,7 @@ export default function ContactosPage() {
         </Select>
       </div>
 
-      <Tabs defaultValue="compradores">
+      <Tabs defaultValue="vendedores">
         <TabsList>
           <TabsTrigger value="compradores">
             <ShoppingCart className="w-4 h-4 mr-1" />Compradores ({compradores.length})

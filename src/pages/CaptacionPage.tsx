@@ -448,6 +448,51 @@ export default function CaptacionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) { setEditOpen(false); setEditLead(null); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Lead</DialogTitle></DialogHeader>
+          {editLead && (
+            <div className="space-y-4">
+              <div><Label>Dirección *</Label><Input value={editLead.address} onChange={(e) => setEditLead({ ...editLead, address: e.target.value })} /></div>
+              <div><Label>Enlace al anuncio</Label><Input value={editLead.listing_url || ""} onChange={(e) => setEditLead({ ...editLead, listing_url: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tipo de anunciante</Label>
+                  <Select value={editLead.advertiser_type} onValueChange={(v) => setEditLead({ ...editLead, advertiser_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{ADVERTISER_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Portal de origen</Label>
+                  <Select value={editLead.source_portal} onValueChange={(v) => setEditLead({ ...editLead, source_portal: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{SOURCE_PORTALS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label>Nombre</Label><Input value={editLead.name || ""} onChange={(e) => setEditLead({ ...editLead, name: e.target.value })} /></div>
+              <div><Label>Teléfono</Label><Input value={editLead.phone || ""} onChange={(e) => setEditLead({ ...editLead, phone: e.target.value })} /></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditOpen(false); setEditLead(null); }}>Cancelar</Button>
+            <Button onClick={handleEditLead} disabled={!editLead?.address.trim()}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Lead Dialog */}
+      <DeleteConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="¿Eliminar lead?"
+        description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer. El contacto vinculado no será eliminado."
+        onConfirm={handleDeleteLead}
+        isPending={deleteLead.isPending}
+      />
     </div>
   );
 }

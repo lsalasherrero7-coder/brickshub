@@ -333,6 +333,9 @@ export default function CaptacionPage() {
                        </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Añadir a Contactos" onClick={() => handleAddToContacts(lead)}>
+                            <UserPlus className="w-3.5 h-3.5" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditLead({ ...lead }); setEditOpen(true); }}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>

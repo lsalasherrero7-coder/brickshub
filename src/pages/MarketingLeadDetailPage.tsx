@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock, Trash2, MapPin, Building, FileText } from "lucide-react";
 import LinkedContactPanel from "@/components/LinkedContactPanel";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 

@@ -8,6 +8,7 @@ import { Upload, FileText, Trash2, CheckCircle, XCircle, ExternalLink } from "lu
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 interface Props {
   propertyId: string;
@@ -19,6 +20,7 @@ export default function PropertyDocuments({ propertyId }: Props) {
   const deleteMutation = useDeleteDocument();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [customName, setCustomName] = useState("");
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
 
   const getDocForType = (type: string) => {
     return documents?.filter((d) => d.document_type === type) || [];
@@ -26,24 +28,22 @@ export default function PropertyDocuments({ propertyId }: Props) {
 
   const handleUpload = async (documentType: string, file: File, name?: string) => {
     try {
-      await uploadMutation.mutateAsync({
-        propertyId,
-        documentType,
-        customName: name,
-        file,
-      });
+      await uploadMutation.mutateAsync({ propertyId, documentType, customName: name, file });
       toast.success("Documento subido correctamente");
     } catch (err: any) {
       toast.error(err.message || "Error al subir documento");
     }
   };
 
-  const handleDelete = async (docId: string) => {
+  const handleDelete = async () => {
+    if (!deleteDocId) return;
     try {
-      await deleteMutation.mutateAsync({ id: docId, propertyId });
+      await deleteMutation.mutateAsync({ id: deleteDocId, propertyId });
       toast.success("Documento eliminado");
     } catch (err: any) {
       toast.error(err.message || "Error al eliminar");
+    } finally {
+      setDeleteDocId(null);
     }
   };
 
@@ -96,7 +96,7 @@ export default function PropertyDocuments({ propertyId }: Props) {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(docs[0].id)}
+                        onClick={() => setDeleteDocId(docs[0].id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -156,7 +156,7 @@ export default function PropertyDocuments({ propertyId }: Props) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(doc.id)}
+                  onClick={() => setDeleteDocId(doc.id)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -196,6 +196,16 @@ export default function PropertyDocuments({ propertyId }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation */}
+      <DeleteConfirmDialog
+        open={!!deleteDocId}
+        onOpenChange={(o) => !o && setDeleteDocId(null)}
+        title="¿Eliminar documento?"
+        description="¿Estás seguro de que quieres eliminar este documento? Esta acción no se puede deshacer."
+        onConfirm={handleDelete}
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 }

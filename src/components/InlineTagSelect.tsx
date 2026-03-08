@@ -12,7 +12,7 @@ interface InlineTagSelectProps {
   options: readonly TagOption[];
   colorMap: Record<string, string>;
   placeholder: string;
-  onChange: (value: string) => void;
+  onChange: (value: string | null) => void;
 }
 
 export default function InlineTagSelect({ value, options, colorMap, placeholder, onChange }: InlineTagSelectProps) {
@@ -50,6 +50,22 @@ export default function InlineTagSelect({ value, options, colorMap, placeholder,
             e.stopPropagation();
           }}
         >
+          {/* Clear option */}
+          <button
+            className={cn(
+              "w-full text-left px-3 py-1.5 text-xs hover:bg-accent transition-colors flex items-center gap-2 text-muted-foreground",
+              !value && "font-semibold"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onChange(null);
+              setOpen(false);
+            }}
+          >
+            <span className="w-2 h-2 rounded-full shrink-0 bg-muted" />
+            Sin etiqueta
+          </button>
           {options.map((opt) => (
             <button
               key={opt.value}

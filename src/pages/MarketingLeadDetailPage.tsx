@@ -20,6 +20,7 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock } from "lucide-react";
+import LinkedContactPanel from "@/components/LinkedContactPanel";
 
 const MKTG_LEAD_STATUSES = [
   { value: "nuevo", label: "Nuevo" },

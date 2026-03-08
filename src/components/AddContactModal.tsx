@@ -87,7 +87,7 @@ export default function AddContactModal({ open, onOpenChange, prefill }: Props) 
     try {
       const fullName = [form.name, form.last_name].filter(Boolean).join(" ");
 
-      const contactData: Record<string, any> = {
+      const contactInsert = {
         name: fullName,
         last_name: form.last_name || null,
         phone: form.phone || null,
@@ -96,14 +96,10 @@ export default function AddContactModal({ open, onOpenChange, prefill }: Props) 
         address: form.address || null,
         property_id: matchedProperty?.id || null,
         source_portal: prefill?.source_portal || "manual",
+        lead_id: prefill?.lead_id || null,
       };
 
-      // Link back to origin
-      if (prefill?.lead_id) {
-        contactData.lead_id = prefill.lead_id;
-      }
-
-      const { data: contact, error } = await supabase.from("contacts").insert(contactData).select().single();
+      const { data: contact, error } = await supabase.from("contacts").insert(contactInsert).select().single();
       if (error) throw error;
 
       // If marketing lead, link the contact back

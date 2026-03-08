@@ -62,12 +62,6 @@ export default function ContactDetailPage() {
   const { data: propertyVisits } = usePropertyVisits(contact?.property_id || undefined);
   const { data: interactions } = useContactInteractions(id);
   const updateContact = useUpdateContact();
-  const createNote = useCreateContactNote();
-  const updateNote = useUpdateContactNote();
-  const deleteNote = useDeleteContactNote();
-  const createTask = useCreateContactTask();
-  const updateTaskStatus = useUpdateContactTaskStatus();
-  const deleteTask = useDeleteContactTask();
   const deleteContact = useDeleteContact();
   const createInteraction = useCreateContactInteraction();
 

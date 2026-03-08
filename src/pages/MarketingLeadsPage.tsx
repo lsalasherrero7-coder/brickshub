@@ -172,8 +172,9 @@ export default function MarketingLeadsPage() {
                 <TableHead>Próx. acción</TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("next_action_date")}>
                   <span className="flex items-center gap-1">Fecha acción <ArrowUpDown className="w-3 h-3" /></span>
-                </TableHead>
-              </TableRow>
+                 </TableHead>
+                 <TableHead className="w-[80px]"></TableHead>
+               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (

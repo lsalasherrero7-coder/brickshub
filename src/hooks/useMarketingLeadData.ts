@@ -12,6 +12,9 @@ export interface MarketingLead {
   name: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
+  municipality: string | null;
+  valuation_reason: string | null;
   campaign_id: string;
   status: string;
   assigned_agent_id: string | null;

@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Plus, Phone, Mail, Globe, User, Clock, Trash2, MapPin, Building, FileText } from "lucide-react";
 import LinkedContactPanel from "@/components/LinkedContactPanel";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
@@ -189,6 +189,18 @@ export default function MarketingLeadDetailPage() {
             <div className="flex items-center gap-2 text-sm">
               <Mail className="w-4 h-4 text-muted-foreground" />
               <span>{lead.email || "Sin email"}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Building className="w-4 h-4 text-muted-foreground" />
+              <span>Municipio: <strong>{lead.municipality || "—"}</strong></span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <span>Dirección: <strong>{lead.address || "—"}</strong></span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <FileText className="w-4 h-4 text-muted-foreground" />
+              <span>Motivo valoración: <strong>{lead.valuation_reason || "—"}</strong></span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Globe className="w-4 h-4 text-muted-foreground" />

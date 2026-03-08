@@ -1,0 +1,1 @@
+ALTER TABLE public.marketing_leads ADD COLUMN address text NULL;

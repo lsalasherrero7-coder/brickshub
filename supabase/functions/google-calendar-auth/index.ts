@@ -64,6 +64,9 @@ Deno.serve(async (req) => {
       `&access_type=offline` +
       `&prompt=consent`;
 
+    console.log("[google-calendar-auth] OAuth URL generated", authUrl);
+    console.log("[google-calendar-auth] redirect_uri used", REDIRECT_URI);
+
     return new Response(
       JSON.stringify({ url: authUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

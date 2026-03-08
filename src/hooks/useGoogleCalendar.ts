@@ -27,6 +27,14 @@ export function useGoogleCalendarConnect() {
       toast.error("Error al conectar con Google Calendar");
       return;
     }
+
+    console.log("[Google OAuth] connect origin sent:", publishedOrigin);
+    console.log("[Google OAuth] full auth URL:", data?.url);
+    if (data?.url) {
+      const redirectUri = new URL(data.url).searchParams.get("redirect_uri");
+      console.log("[Google OAuth] redirect_uri in auth URL:", redirectUri);
+    }
+
     window.location.href = data.url;
   };
   return { connect };

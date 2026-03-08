@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/leads/:id" element={<MarketingLeadDetailPage />} />
             <Route path="/calendario" element={<CalendarPage />} />
             <Route path="/hipoteca" element={<HipotecaPage />} />
+            <Route path="/google-callback" element={<GoogleCallbackPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useLeads, useCreateLead, useUpdateLeadStatus } from "@/hooks/useLeadData";
+import { useLeads, useCreateLead, useUpdateLeadStatus, useUpdateLead, useDeleteLead } from "@/hooks/useLeadData";
 import { useProperties } from "@/hooks/usePropertyData";
 import { useCreateVisit } from "@/hooks/useVisitData";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,9 +19,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, ExternalLink, Link2, CalendarIcon } from "lucide-react";
+import { Plus, Search, ExternalLink, Link2, CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 
 const statusColors: Record<string, string> = {
   no_contactado: "bg-muted text-muted-foreground",

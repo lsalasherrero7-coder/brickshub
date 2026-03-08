@@ -178,7 +178,7 @@ export default function MarketingLeadsPage() {
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No hay leads</TableCell></TableRow>
               ) : filtered.map((lead) => {
                 const actionDate = lead.next_action_date ? parseISO(lead.next_action_date) : null;
                 const isOverdue = actionDate && isPast(actionDate) && !isToday(actionDate) && !["convertido", "descartado"].includes(lead.status);

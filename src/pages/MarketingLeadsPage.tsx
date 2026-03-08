@@ -60,6 +60,22 @@ export default function MarketingLeadsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ id: "", name: "", phone: "", email: "", campaign_id: "" });
 
+  // Add to contacts modal
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactPrefill, setContactPrefill] = useState<ContactPrefill | undefined>();
+
+  const handleAddToContacts = (lead: MarketingLead) => {
+    setContactPrefill({
+      name: lead.name || "",
+      phone: lead.phone || "",
+      email: lead.email || "",
+      address: lead.address || "",
+      municipality: lead.municipality || "",
+      marketing_lead_id: lead.id,
+    });
+    setContactModalOpen(true);
+  };
+
   const filtered = useMemo(() => {
     if (!leads) return [];
     let result = leads.filter((l) => {

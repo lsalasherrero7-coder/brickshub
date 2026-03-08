@@ -52,7 +52,7 @@ function ProtectedRoutes() {
         <Route path="/calendario" element={<CalendarPage />} />
         <Route path="/hipoteca" element={<HipotecaPage />} />
         <Route path="/usuarios" element={<AdminUsersPage />} />
-        <Route path="/google-callback" element={<GoogleCallbackPage />} />
+        <Route path="*" element={<NotFound />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

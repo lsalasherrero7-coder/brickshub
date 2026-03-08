@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  useContact, useUpdateContact, useContactNotes, useCreateContactNote, useUpdateContactNote, useDeleteContactNote,
-  useContactTasks, useCreateContactTask, useUpdateContactTaskStatus, useDeleteContactTask,
+  useContact, useUpdateContact,
   useBuyerProfile, useSuggestedProperties, useDeleteContact,
 } from "@/hooks/useContactData";
 import { useContactInteractions, useCreateContactInteraction } from "@/hooks/useContactInteractions";
 import { usePropertyVisits } from "@/hooks/useVisitData";
-import { LEAD_STATUSES, SOURCE_PORTALS, TASK_STATUSES, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS, TEMPERATURE_TAGS, STATUS_TAGS, TEMPERATURE_TAG_COLORS, STATUS_TAG_COLORS } from "@/lib/types";
+import { LEAD_STATUSES, SOURCE_PORTALS, PROPERTY_TYPES, GARAGE_OPTIONS, FLOOR_OPTIONS, TEMPERATURE_TAGS, STATUS_TAGS, TEMPERATURE_TAG_COLORS, STATUS_TAG_COLORS } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +25,7 @@ import StatusBadge from "@/components/StatusBadge";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import InlineTagSelect from "@/components/InlineTagSelect";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, FileText, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Phone, MapPin, Globe, Building2, Plus, Calendar as CalendarIcon, Mail, Home, ShoppingCart, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 
 const ACTION_TYPES = [
   { value: "Llamar", label: "Llamar" },
@@ -56,8 +53,6 @@ export default function ContactDetailPage() {
   const { toast } = useToast();
 
   const { data: contact, isLoading } = useContact(id);
-  const { data: notes } = useContactNotes(id);
-  const { data: tasks } = useContactTasks(id);
   const { data: buyerProfile } = useBuyerProfile(id);
   const { data: suggestedProperties } = useSuggestedProperties(
     contact?.contact_type === "comprador" ? id : undefined
@@ -65,23 +60,10 @@ export default function ContactDetailPage() {
   const { data: propertyVisits } = usePropertyVisits(contact?.property_id || undefined);
   const { data: interactions } = useContactInteractions(id);
   const updateContact = useUpdateContact();
-  const createNote = useCreateContactNote();
-  const updateNote = useUpdateContactNote();
-  const deleteNote = useDeleteContactNote();
-  const createTask = useCreateContactTask();
-  const updateTaskStatus = useUpdateContactTaskStatus();
-  const deleteTask = useDeleteContactTask();
   const deleteContact = useDeleteContact();
   const createInteraction = useCreateContactInteraction();
 
-  const [newNote, setNewNote] = useState("");
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteContent, setEditingNoteContent] = useState("");
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", description: "", due_date: "", due_time: "10:00" });
   const [deleteContactOpen, setDeleteContactOpen] = useState(false);
-  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
-  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
 
   // Next action state (vendedor)
   const [actionType, setActionType] = useState("");
@@ -101,46 +83,8 @@ export default function ContactDetailPage() {
     return <div className="text-center py-12 text-muted-foreground">Contacto no encontrado</div>;
   }
 
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
-    await createNote.mutateAsync({ contact_id: contact.id, content: newNote });
-    setNewNote("");
-    toast({ title: "Nota añadida" });
-  };
 
-  const handleUpdateNote = async (noteId: string) => {
-    await updateNote.mutateAsync({ id: noteId, content: editingNoteContent, contact_id: contact.id });
-    setEditingNoteId(null);
-    toast({ title: "Nota actualizada" });
-  };
 
-  const handleDeleteNote = async () => {
-    if (!deleteNoteId) return;
-    await deleteNote.mutateAsync({ id: deleteNoteId, contact_id: contact.id });
-    setDeleteNoteId(null);
-    toast({ title: "Nota eliminada" });
-  };
-
-  const handleAddTask = async () => {
-    if (!newTask.title.trim() || !newTask.due_date) return;
-    const dueDateTime = `${newTask.due_date}T${newTask.due_time}:00`;
-    await createTask.mutateAsync({ contact_id: contact.id, title: newTask.title, description: newTask.description || undefined, due_date: dueDateTime });
-    setTaskDialogOpen(false);
-    setNewTask({ title: "", description: "", due_date: "", due_time: "10:00" });
-    toast({ title: "Tarea creada", description: "Se ha añadido al calendario" });
-  };
-
-  const handleToggleTask = async (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "pendiente" ? "completada" : "pendiente";
-    await updateTaskStatus.mutateAsync({ id: taskId, status: newStatus });
-  };
-
-  const handleDeleteTask = async () => {
-    if (!deleteTaskId) return;
-    await deleteTask.mutateAsync({ id: deleteTaskId, contact_id: contact.id });
-    setDeleteTaskId(null);
-    toast({ title: "Tarea eliminada" });
-  };
 
   const handleDeleteContact = async (cascades: string[]) => {
     await deleteContact.mutateAsync({ id: contact.id, cascades });
@@ -409,99 +353,11 @@ export default function ContactDetailPage() {
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="notas">
+      <Tabs defaultValue={contact.property_id ? "visitas" : isBuyer ? "sugeridas" : "visitas"}>
         <TabsList>
-          <TabsTrigger value="notas"><FileText className="w-4 h-4 mr-1" />Notas</TabsTrigger>
-          <TabsTrigger value="tareas"><CalendarIcon className="w-4 h-4 mr-1" />Tareas</TabsTrigger>
           {contact.property_id && <TabsTrigger value="visitas"><Clock className="w-4 h-4 mr-1" />Visitas</TabsTrigger>}
           {isBuyer && <TabsTrigger value="sugeridas"><Building2 className="w-4 h-4 mr-1" />Propiedades sugeridas</TabsTrigger>}
         </TabsList>
-
-        <TabsContent value="notas">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Notas</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Textarea value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="Escribe una nota..." className="flex-1" />
-                <Button onClick={handleAddNote} disabled={!newNote.trim()}>Añadir</Button>
-              </div>
-              {notes && notes.length > 0 ? (
-                <div className="space-y-3">
-                  {notes.map((note) => (
-                    <div key={note.id} className="border rounded-lg p-3">
-                      {editingNoteId === note.id ? (
-                        <div className="space-y-2">
-                          <Textarea value={editingNoteContent} onChange={(e) => setEditingNoteContent(e.target.value)} />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => handleUpdateNote(note.id)}>Guardar</Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingNoteId(null)}>Cancelar</Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <CalendarIcon className="w-3 h-3 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground flex-1">
-                              {format(new Date(note.created_at), "dd MMM yyyy HH:mm", { locale: es })}
-                              {note.updated_at !== note.created_at && (
-                                <span className="ml-1 italic">(editado {format(new Date(note.updated_at), "dd MMM yyyy HH:mm", { locale: es })})</span>
-                              )}
-                            </p>
-                            <Button size="sm" variant="ghost" onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}>Editar</Button>
-                            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteNoteId(note.id)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">Sin notas aún</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="tareas">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Tareas</CardTitle>
-              <Button size="sm" onClick={() => setTaskDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-1" />Nueva Tarea
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {tasks && tasks.length > 0 ? (
-                <div className="space-y-2">
-                  {tasks.map((task) => (
-                    <div key={task.id} className={`flex items-start gap-3 border rounded-lg p-3 ${task.status === "completada" ? "opacity-60" : ""}`}>
-                      <Checkbox checked={task.status === "completada"} onCheckedChange={() => handleToggleTask(task.id, task.status)} className="mt-0.5" />
-                      <div className="flex-1">
-                        <p className={`text-sm font-medium ${task.status === "completada" ? "line-through" : ""}`}>{task.title}</p>
-                        {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <CalendarIcon className="w-3 h-3" />
-                          {format(new Date(task.due_date), "dd MMM yyyy HH:mm", { locale: es })}
-                        </p>
-                      </div>
-                      <Badge variant={task.status === "completada" ? "secondary" : "outline"} className="text-xs">
-                        {TASK_STATUSES.find((s) => s.value === task.status)?.label || task.status}
-                      </Badge>
-                      <Button size="sm" variant="ghost" className="text-destructive h-7 w-7 p-0" onClick={() => setDeleteTaskId(task.id)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">Sin tareas</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {contact.property_id && (
           <TabsContent value="visitas">
@@ -576,25 +432,6 @@ export default function ContactDetailPage() {
         )}
       </Tabs>
 
-      {/* New Task Dialog */}
-      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Nueva Tarea</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label>Título *</Label><Input value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} /></div>
-            <div><Label>Descripción</Label><Textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Fecha *</Label><Input type="date" value={newTask.due_date} onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })} /></div>
-              <div><Label>Hora</Label><Input type="time" value={newTask.due_time} onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })} /></div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddTask} disabled={!newTask.title.trim() || !newTask.due_date}>Crear Tarea</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete contact dialog */}
       <DeleteConfirmDialog
         open={deleteContactOpen}
@@ -602,29 +439,12 @@ export default function ContactDetailPage() {
         title="¿Eliminar contacto?"
         description="¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer."
         cascadeOptions={[
-          { key: "notes", label: "Notas del contacto", defaultChecked: true },
-          { key: "tasks", label: "Tareas del contacto", defaultChecked: true },
           { key: "buyer_profile", label: "Perfil de comprador", defaultChecked: true },
         ]}
         onConfirm={handleDeleteContact}
         isPending={deleteContact.isPending}
       />
 
-      {/* Delete note dialog */}
-      <DeleteConfirmDialog
-        open={!!deleteNoteId}
-        onOpenChange={(open) => !open && setDeleteNoteId(null)}
-        title="¿Eliminar nota?"
-        onConfirm={handleDeleteNote}
-      />
-
-      {/* Delete task dialog */}
-      <DeleteConfirmDialog
-        open={!!deleteTaskId}
-        onOpenChange={(open) => !open && setDeleteTaskId(null)}
-        title="¿Eliminar tarea?"
-        onConfirm={handleDeleteTask}
-      />
     </div>
   );
 }

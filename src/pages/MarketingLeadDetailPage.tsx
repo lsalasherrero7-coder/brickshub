@@ -127,12 +127,9 @@ export default function MarketingLeadDetailPage() {
       source_portal: "manual",
       marketing_lead_id: lead.id,
     };
-    setContactModalOpen(true);
-    // We need to pass prefill through state - store it
     setContactPrefill(prefill);
+    setContactModalOpen(true);
   };
-
-  const [contactPrefill, setContactPrefill] = useState<ContactPrefill | undefined>();
 
   const campaignName = lead.campaign?.name || campaigns?.find((c) => c.id === lead.campaign_id)?.name || "—";
 

@@ -14,6 +14,7 @@ import ContactDetailPage from "@/pages/ContactDetailPage";
 import MarketingLeadsPage from "@/pages/MarketingLeadsPage";
 import MarketingLeadDetailPage from "@/pages/MarketingLeadDetailPage";
 import HipotecaPage from "@/pages/HipotecaPage";
+import GoogleCallbackPage from "@/pages/GoogleCallbackPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

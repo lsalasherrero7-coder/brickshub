@@ -223,6 +223,11 @@ export default function MarketingLeadsPage() {
                      </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {!lead.contact_id && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Añadir a Contactos" onClick={() => handleAddToContacts(lead)}>
+                            <UserPlus className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditForm({ id: lead.id, name: lead.name, phone: lead.phone || "", email: lead.email || "", campaign_id: lead.campaign_id }); setEditOpen(true); }}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>

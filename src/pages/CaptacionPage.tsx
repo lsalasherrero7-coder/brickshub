@@ -299,8 +299,8 @@ export default function CaptacionPage() {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Portal</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
+                 <TableHead>Estado</TableHead>
+                 <TableHead className="w-[80px]"></TableHead>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (

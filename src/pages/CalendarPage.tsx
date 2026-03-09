@@ -362,7 +362,7 @@ export default function CalendarPage() {
                           onClick={() => setSelectedVisit(v)}
                           className="truncate text-left flex-1 min-w-0"
                         >
-                          {format(new Date(v.visit_date), "HH:mm")} {v.client_first_name}
+                          {format(new Date(v.visit_date), "HH:mm")} Visita - {v.client_first_name}
                         </button>
                         <ActionButtons
                           onEdit={(e) => openEditVisit(v, e)}
@@ -385,7 +385,7 @@ export default function CalendarPage() {
                           className="truncate flex-1 min-w-0"
                         >
                           <ListTodo className="w-2.5 h-2.5 inline mr-0.5" />
-                          {format(new Date(t.due_date), "HH:mm")} {t.title}
+                          {format(new Date(t.due_date), "HH:mm")} {t.title} - {t.contacts?.name || ""}
                         </Link>
                         <ActionButtons
                           onEdit={(e) => openEditTask(t, e)}
@@ -405,7 +405,7 @@ export default function CalendarPage() {
                           className="truncate flex-1 min-w-0"
                         >
                           <Megaphone className="w-2.5 h-2.5 inline mr-0.5" />
-                          {format(new Date(l.next_action_date), "HH:mm")} {l.name}
+                          {format(new Date(l.next_action_date), "HH:mm")} {l.next_action_type || "Acción"} - {l.name}
                         </Link>
                         <ActionButtons
                           onEdit={(e) => openEditLeadAction(l, e)}

@@ -3,17 +3,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Contact, ContactNote, ContactTask } from "@/lib/types";
 import { syncContactNextActionToCalendar, syncContactTaskToCalendar } from "@/hooks/useGoogleCalendar";
 
-function buildContactTaskEvent(task: ContactTask, contactName: string, contactAddress?: string | null) {
+function buildContactTaskEvent(task: ContactTask, contactName: string, contact?: { address?: string | null; phone?: string | null; email?: string | null; temperature_tag?: string | null; status_tag?: string | null }) {
   const start = new Date(task.due_date);
   const end = new Date(start.getTime() + 30 * 60 * 1000);
-  const notes = task.description?.trim() || "";
+  const descParts = [`Tarea: ${task.title}`, `Contacto: ${contactName}`];
+  if (contact?.phone) descParts.push(`Teléfono: ${contact.phone}`);
+  if (contact?.email) descParts.push(`Email: ${contact.email}`);
+  if (contact?.address) descParts.push(`Dirección: ${contact.address}`);
+  if (contact?.temperature_tag) descParts.push(`Temperatura: ${contact.temperature_tag}`);
+  if (contact?.status_tag) descParts.push(`Estado: ${contact.status_tag}`);
+  if (task.description?.trim()) descParts.push(`Notas: ${task.description.trim()}`);
 
   return {
-    summary: `Tarea · ${contactName}`,
-    description: `Tipo: ${task.title}\nContacto: ${contactName}${notes ? `\nNotas: ${notes}` : ""}`,
+    summary: `${task.title} - ${contactName}`,
+    description: descParts.join("\n"),
     start_datetime: start.toISOString(),
     end_datetime: end.toISOString(),
-    location: contactAddress || undefined,
+    location: contact?.address || undefined,
   };
 }
 
@@ -21,11 +27,17 @@ function buildContactNextActionEvent(contact: Contact) {
   const start = new Date(contact.next_action_date!);
   const end = new Date(start.getTime() + 30 * 60 * 1000);
   const actionType = contact.next_action_type || "Próxima acción";
-  const notes = contact.next_action_note?.trim() || "";
+  const descParts = [`Tipo: ${actionType}`, `Contacto: ${contact.name}`];
+  if (contact.phone) descParts.push(`Teléfono: ${contact.phone}`);
+  if (contact.email) descParts.push(`Email: ${contact.email}`);
+  if (contact.address) descParts.push(`Dirección: ${contact.address}`);
+  if (contact.temperature_tag) descParts.push(`Temperatura: ${contact.temperature_tag}`);
+  if (contact.status_tag) descParts.push(`Estado: ${contact.status_tag}`);
+  if (contact.next_action_note?.trim()) descParts.push(`Notas: ${contact.next_action_note.trim()}`);
 
   return {
-    summary: `Próxima acción · ${contact.name}`,
-    description: `Tipo: ${actionType}\nContacto: ${contact.name}${notes ? `\nNotas: ${notes}` : ""}`,
+    summary: `${actionType} - ${contact.name}`,
+    description: descParts.join("\n"),
     start_datetime: start.toISOString(),
     end_datetime: end.toISOString(),
     location: contact.address || undefined,
@@ -208,13 +220,13 @@ export function useCreateContactTask() {
 
       const { data: contact } = await supabase
         .from("contacts")
-        .select("name, address")
+        .select("name, address, phone, email, temperature_tag, status_tag")
         .eq("id", task.contact_id)
         .single();
 
       if (!contact?.name) return;
 
-      const event = buildContactTaskEvent(task, contact.name, contact.address);
+      const event = buildContactTaskEvent(task, contact.name, contact);
       await syncContactTaskToCalendar("create", task.id, event);
     },
   });
@@ -258,13 +270,13 @@ export function useUpdateContactTask() {
 
       const { data: contact } = await supabase
         .from("contacts")
-        .select("name, address")
+        .select("name, address, phone, email, temperature_tag, status_tag")
         .eq("id", task.contact_id)
         .single();
 
       if (!contact?.name) return;
 
-      const event = buildContactTaskEvent(task, contact.name, contact.address);
+      const event = buildContactTaskEvent(task, contact.name, contact);
       await syncContactTaskToCalendar("update", task.id, event);
     },
   });

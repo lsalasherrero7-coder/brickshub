@@ -35,10 +35,15 @@ export function usePropertyVisits(propertyId: string | undefined) {
 
 async function buildVisitEvent(visit: any, propertyAddress?: string) {
   const start = new Date(visit.visit_date);
-  const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const clientName = `${visit.client_first_name} ${visit.client_last_name}`.trim();
+  const descParts = [`Visita a propiedad`, `Cliente: ${clientName}`];
+  if (visit.client_phone) descParts.push(`Teléfono: ${visit.client_phone}`);
+  if (propertyAddress) descParts.push(`Dirección: ${propertyAddress}`);
+  if (visit.notes) descParts.push(`Notas: ${visit.notes}`);
   return {
-    summary: `Visita: ${visit.client_first_name} ${visit.client_last_name}`,
-    description: visit.notes || "",
+    summary: `Visita - ${clientName}`,
+    description: descParts.join("\n"),
     start_datetime: start.toISOString(),
     end_datetime: end.toISOString(),
     location: propertyAddress,

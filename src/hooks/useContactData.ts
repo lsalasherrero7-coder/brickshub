@@ -239,10 +239,42 @@ export function useUpdateContactTaskStatus() {
   });
 }
 
+export function useUpdateContactTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; title?: string; description?: string | null; due_date?: string; contact_id: string }) => {
+      const { contact_id, ...dbUpdates } = updates;
+      const { data, error } = await supabase
+        .from("contact_tasks")
+        .update(dbUpdates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return { ...data, contact_id } as ContactTask & { contact_id: string };
+    },
+    onSuccess: async (task) => {
+      qc.invalidateQueries({ queryKey: ["contact_tasks"] });
+
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("name, address")
+        .eq("id", task.contact_id)
+        .single();
+
+      if (!contact?.name) return;
+
+      const event = buildContactTaskEvent(task, contact.name, contact.address);
+      await syncContactTaskToCalendar("update", task.id, event);
+    },
+  });
+}
+
 export function useDeleteContactTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, contact_id }: { id: string; contact_id: string }) => {
+      await syncContactTaskToCalendar("delete", id);
       const { error } = await supabase.from("contact_tasks").delete().eq("id", id);
       if (error) throw error;
     },

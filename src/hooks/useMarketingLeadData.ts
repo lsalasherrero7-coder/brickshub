@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { syncMarketingLeadNextActionToCalendar } from "@/hooks/useGoogleCalendar";
 
 export interface MarketingCampaign {
   id: string;
@@ -33,6 +34,22 @@ export interface MarketingLeadInteraction {
   interaction_type: string;
   notes: string | null;
   created_at: string;
+}
+
+function buildMarketingNextActionEvent(lead: MarketingLead) {
+  const start = new Date(lead.next_action_date!);
+  const end = new Date(start.getTime() + 30 * 60 * 1000);
+  const actionType = lead.next_action_type || "Próxima acción";
+  const notes = lead.next_action_note?.trim() || "";
+  const location = [lead.address, lead.municipality].filter(Boolean).join(", ") || undefined;
+
+  return {
+    summary: `Próxima acción · ${lead.name}`,
+    description: `Tipo: ${actionType}\nContacto: ${lead.name}${notes ? `\nNotas: ${notes}` : ""}`,
+    start_datetime: start.toISOString(),
+    end_datetime: end.toISOString(),
+    location,
+  };
 }
 
 // Campaigns
@@ -140,10 +157,22 @@ export function useUpdateMarketingLead() {
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return data as MarketingLead;
     },
-    onSuccess: () => {
+    onSuccess: async (data, vars) => {
       qc.invalidateQueries({ queryKey: ["marketing_leads"] });
+
+      const nextActionTouched =
+        "next_action_date" in vars || "next_action_type" in vars || "next_action_note" in vars;
+
+      if (!nextActionTouched) return;
+
+      if (data.next_action_date && data.next_action_type) {
+        const event = buildMarketingNextActionEvent(data);
+        await syncMarketingLeadNextActionToCalendar("update", data.id, event);
+      } else {
+        await syncMarketingLeadNextActionToCalendar("delete", data.id);
+      }
     },
   });
 }
@@ -219,3 +248,4 @@ export function useOverdueLeadsCount() {
     },
   });
 }
+

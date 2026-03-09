@@ -385,7 +385,7 @@ export default function CalendarPage() {
                           className="truncate flex-1 min-w-0"
                         >
                           <ListTodo className="w-2.5 h-2.5 inline mr-0.5" />
-                          {format(new Date(t.due_date), "HH:mm")} {t.title}
+                          {format(new Date(t.due_date), "HH:mm")} {t.title} - {t.contacts?.name || ""}
                         </Link>
                         <ActionButtons
                           onEdit={(e) => openEditTask(t, e)}

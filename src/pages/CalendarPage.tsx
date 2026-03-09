@@ -1,18 +1,21 @@
 import { useState, useMemo, useEffect } from "react";
-import { useVisits, useUpdateVisitStatus } from "@/hooks/useVisitData";
+import { useVisits, useUpdateVisitStatus, useDeleteVisit, useUpdateVisit } from "@/hooks/useVisitData";
 import { useProperties } from "@/hooks/usePropertyData";
-import { useAllContactTasks } from "@/hooks/useContactData";
-import { useMarketingLeads } from "@/hooks/useMarketingLeadData";
+import { useAllContactTasks, useDeleteContactTask, useUpdateContactTask, useUpdateContact } from "@/hooks/useContactData";
+import { useMarketingLeads, useUpdateMarketingLead } from "@/hooks/useMarketingLeadData";
 import { useGoogleCalendarStatus, useGoogleCalendarConnect, useGoogleCalendarDisconnect } from "@/hooks/useGoogleCalendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo, Megaphone, Unplug } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, MapPin, Phone, FileText, CheckCircle, XCircle, ListTodo, Megaphone, Unplug, Pencil, Trash2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { VISIT_STATUSES } from "@/lib/types";
 import type { Visit } from "@/lib/types";
 import ScheduleVisitModal from "@/components/ScheduleVisitModal";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import CalendarEventEditModal from "@/components/CalendarEventEditModal";
+import type { CalendarEvent } from "@/components/CalendarEventEditModal";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -35,7 +38,20 @@ export default function CalendarPage() {
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const updateStatus = useUpdateVisitStatus();
+  const deleteVisit = useDeleteVisit();
+  const updateVisit = useUpdateVisit();
+  const deleteTask = useDeleteContactTask();
+  const updateTask = useUpdateContactTask();
+  const updateContact = useUpdateContact();
+  const updateMarketingLead = useUpdateMarketingLead();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Edit/Delete state
+  const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; contactId?: string } | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     const gcal = searchParams.get("gcal");
@@ -63,6 +79,131 @@ export default function CalendarPage() {
     } catch (err: any) {
       toast.error(err.message || "Error al actualizar");
     }
+  };
+
+  // Delete handler
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsPending(true);
+    try {
+      if (deleteTarget.type === "visit") {
+        await deleteVisit.mutateAsync(deleteTarget.id);
+      } else if (deleteTarget.type === "task") {
+        await deleteTask.mutateAsync({ id: deleteTarget.id, contact_id: deleteTarget.contactId! });
+      } else if (deleteTarget.type === "lead_action") {
+        await updateMarketingLead.mutateAsync({
+          id: deleteTarget.id,
+          next_action_type: null,
+          next_action_date: null,
+          next_action_note: null,
+        });
+      } else if (deleteTarget.type === "contact_action") {
+        await updateContact.mutateAsync({
+          id: deleteTarget.id,
+          next_action_type: null,
+          next_action_date: null,
+          next_action_note: null,
+        });
+      }
+      toast.success("Eliminado correctamente");
+      setDeleteOpen(false);
+      setSelectedVisit(null);
+    } catch (err: any) {
+      toast.error(err.message || "Error al eliminar");
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  // Edit save handler
+  const handleEditSave = async (evt: CalendarEvent) => {
+    const newDatetime = new Date(evt.date);
+    const [h, m] = evt.time.split(":").map(Number);
+    newDatetime.setHours(h, m, 0, 0);
+    const isoDate = newDatetime.toISOString();
+
+    try {
+      if (evt.type === "visit") {
+        await updateVisit.mutateAsync({
+          id: evt.id,
+          visit_date: isoDate,
+          notes: evt.notes || null,
+        });
+      } else if (evt.type === "task") {
+        await updateTask.mutateAsync({
+          id: evt.id,
+          contact_id: evt.contact_id!,
+          title: evt.title,
+          due_date: isoDate,
+          description: evt.notes || null,
+        });
+      } else if (evt.type === "lead_action") {
+        await updateMarketingLead.mutateAsync({
+          id: evt.id,
+          next_action_date: isoDate,
+          next_action_note: evt.notes || null,
+        });
+      } else if (evt.type === "contact_action") {
+        await updateContact.mutateAsync({
+          id: evt.id,
+          next_action_date: isoDate,
+          next_action_note: evt.notes || null,
+        });
+      }
+      toast.success("Actualizado correctamente");
+      setEditOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Error al actualizar");
+    }
+  };
+
+  // Open edit for visit
+  const openEditVisit = (v: Visit, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const d = new Date(v.visit_date);
+    setEditEvent({
+      id: v.id,
+      type: "visit",
+      date: d,
+      time: format(d, "HH:mm"),
+      title: `${v.client_first_name} ${v.client_last_name}`,
+      notes: v.notes || "",
+    });
+    setEditOpen(true);
+  };
+
+  // Open edit for task
+  const openEditTask = (t: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const d = new Date(t.due_date);
+    setEditEvent({
+      id: t.id,
+      type: "task",
+      date: d,
+      time: format(d, "HH:mm"),
+      title: t.title,
+      notes: t.description || "",
+      contact_id: t.contact_id,
+    });
+    setEditOpen(true);
+  };
+
+  // Open edit for lead action
+  const openEditLeadAction = (l: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const d = new Date(l.next_action_date);
+    setEditEvent({
+      id: l.id,
+      type: "lead_action",
+      date: d,
+      time: format(d, "HH:mm"),
+      title: l.name,
+      notes: l.next_action_note || "",
+      action_type: l.next_action_type,
+    });
+    setEditOpen(true);
   };
 
   const visitsByDate = useMemo(() => {
@@ -99,7 +240,6 @@ export default function CalendarPage() {
   const navigateNext = () => setCurrentDate((d) => view === "month" ? addMonths(d, 1) : addWeeks(d, 1));
   const goToday = () => setCurrentDate(new Date());
 
-  // Generate calendar days
   const calendarDays = useMemo(() => {
     if (view === "month") {
       const monthStart = startOfMonth(currentDate);
@@ -120,6 +260,18 @@ export default function CalendarPage() {
   }, [currentDate, view]);
 
   const weekDayHeaders = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+  // Inline action buttons component
+  const ActionButtons = ({ onEdit, onDelete }: { onEdit: (e: React.MouseEvent) => void; onDelete: (e: React.MouseEvent) => void }) => (
+    <span className="inline-flex gap-0.5 ml-auto shrink-0 opacity-0 group-hover/event:opacity-100 transition-opacity">
+      <button onClick={onEdit} className="p-0.5 rounded hover:bg-background/50" title="Editar">
+        <Pencil className="w-2.5 h-2.5" />
+      </button>
+      <button onClick={onDelete} className="p-0.5 rounded hover:bg-destructive/20 text-destructive" title="Eliminar">
+        <Trash2 className="w-2.5 h-2.5" />
+      </button>
+    </span>
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -172,14 +324,12 @@ export default function CalendarPage() {
       {/* Calendar grid */}
       <Card>
         <CardContent className="p-0">
-          {/* Header */}
           <div className="grid grid-cols-7 border-b">
             {weekDayHeaders.map((d) => (
               <div key={d} className="p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
             ))}
           </div>
 
-          {/* Days */}
           <div className={`grid grid-cols-7 ${view === "week" ? "min-h-[300px]" : ""}`}>
             {calendarDays.map((day, i) => {
               const key = format(day, "yyyy-MM-dd");
@@ -202,37 +352,66 @@ export default function CalendarPage() {
                     {format(day, "d")}
                   </div>
                   <div className="space-y-0.5">
+                    {/* Visits */}
                     {dayVisits.slice(0, view === "week" ? 10 : 3).map((v) => (
-                      <button
+                      <div
                         key={v.id}
-                        onClick={() => setSelectedVisit(v)}
-                        className={`w-full text-left text-[10px] leading-tight px-1.5 py-0.5 rounded truncate ${statusColors[v.status] || statusColors.programada}`}
+                        className={`group/event w-full flex items-center text-[10px] leading-tight px-1.5 py-0.5 rounded ${statusColors[v.status] || statusColors.programada}`}
                       >
-                        {format(new Date(v.visit_date), "HH:mm")} {v.client_first_name}
-                      </button>
+                        <button
+                          onClick={() => setSelectedVisit(v)}
+                          className="truncate text-left flex-1 min-w-0"
+                        >
+                          {format(new Date(v.visit_date), "HH:mm")} {v.client_first_name}
+                        </button>
+                        <ActionButtons
+                          onEdit={(e) => openEditVisit(v, e)}
+                          onDelete={(e) => { e.stopPropagation(); setDeleteTarget({ type: "visit", id: v.id }); setDeleteOpen(true); }}
+                        />
+                      </div>
                     ))}
                     {dayVisits.length > (view === "week" ? 10 : 3) && (
                       <p className="text-[10px] text-muted-foreground px-1">+{dayVisits.length - (view === "week" ? 10 : 3)} más</p>
                     )}
+
+                    {/* Tasks */}
                     {dayTasks.slice(0, view === "week" ? 5 : 2).map((t: any) => (
-                      <Link
+                      <div
                         key={t.id}
-                        to={`/contactos/${t.contact_id}`}
-                        className={`w-full block text-[10px] leading-tight px-1.5 py-0.5 rounded truncate ${t.status === "completada" ? "bg-muted text-muted-foreground line-through" : "bg-accent/20 text-accent-foreground"}`}
+                        className={`group/event w-full flex items-center text-[10px] leading-tight px-1.5 py-0.5 rounded ${t.status === "completada" ? "bg-muted text-muted-foreground line-through" : "bg-accent/20 text-accent-foreground"}`}
                       >
-                        <ListTodo className="w-2.5 h-2.5 inline mr-0.5" />
-                        {format(new Date(t.due_date), "HH:mm")} {t.title}
-                      </Link>
+                        <Link
+                          to={`/contactos/${t.contact_id}`}
+                          className="truncate flex-1 min-w-0"
+                        >
+                          <ListTodo className="w-2.5 h-2.5 inline mr-0.5" />
+                          {format(new Date(t.due_date), "HH:mm")} {t.title}
+                        </Link>
+                        <ActionButtons
+                          onEdit={(e) => openEditTask(t, e)}
+                          onDelete={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ type: "task", id: t.id, contactId: t.contact_id }); setDeleteOpen(true); }}
+                        />
+                      </div>
                     ))}
+
+                    {/* Lead Actions */}
                     {dayLeadActions.slice(0, view === "week" ? 3 : 1).map((l: any) => (
-                      <Link
+                      <div
                         key={l.id}
-                        to={`/leads/${l.id}`}
-                        className="w-full block text-[10px] leading-tight px-1.5 py-0.5 rounded truncate bg-purple-100 text-purple-800"
+                        className="group/event w-full flex items-center text-[10px] leading-tight px-1.5 py-0.5 rounded bg-purple-100 text-purple-800"
                       >
-                        <Megaphone className="w-2.5 h-2.5 inline mr-0.5" />
-                        {format(new Date(l.next_action_date), "HH:mm")} {l.name}
-                      </Link>
+                        <Link
+                          to={`/leads/${l.id}`}
+                          className="truncate flex-1 min-w-0"
+                        >
+                          <Megaphone className="w-2.5 h-2.5 inline mr-0.5" />
+                          {format(new Date(l.next_action_date), "HH:mm")} {l.name}
+                        </Link>
+                        <ActionButtons
+                          onEdit={(e) => openEditLeadAction(l, e)}
+                          onDelete={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ type: "lead_action", id: l.id }); setDeleteOpen(true); }}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -257,7 +436,6 @@ export default function CalendarPage() {
             };
             return (
               <div className="space-y-4 mt-2">
-                {/* Property */}
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
@@ -272,7 +450,6 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {/* Client */}
                 <div className="flex items-start gap-2">
                   <User className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
@@ -291,7 +468,6 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {/* Date */}
                 <div className="flex items-start gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
@@ -302,7 +478,6 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {/* Notes */}
                 {selectedVisit.notes && (
                   <div className="flex items-start gap-2">
                     <FileText className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
@@ -313,12 +488,50 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {/* Status + change */}
                 <div className="border-t pt-3 space-y-2">
-                  <p className="text-xs text-muted-foreground">Estado actual</p>
-                  <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${statusColor[selectedVisit.status] || ""}`}>
-                    {VISIT_STATUSES.find((s) => s.value === selectedVisit.status)?.label}
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Estado actual</p>
+                      <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${statusColor[selectedVisit.status] || ""}`}>
+                        {VISIT_STATUSES.find((s) => s.value === selectedVisit.status)?.label}
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs"
+                        onClick={() => {
+                          const d = new Date(selectedVisit.visit_date);
+                          setEditEvent({
+                            id: selectedVisit.id,
+                            type: "visit",
+                            date: d,
+                            time: format(d, "HH:mm"),
+                            title: `${selectedVisit.client_first_name} ${selectedVisit.client_last_name}`,
+                            notes: selectedVisit.notes || "",
+                          });
+                          setEditOpen(true);
+                          setSelectedVisit(null);
+                        }}
+                      >
+                        <Pencil className="w-3.5 h-3.5 mr-1" /> Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={() => {
+                          setDeleteTarget({ type: "visit", id: selectedVisit.id });
+                          setDeleteOpen(true);
+                          setSelectedVisit(null);
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" /> Eliminar
+                      </Button>
+                    </div>
+                  </div>
+
                   <p className="text-xs text-muted-foreground pt-1">Cambiar estado:</p>
                   <div className="flex gap-1 flex-wrap">
                     {selectedVisit.status !== "programada" && (
@@ -343,6 +556,25 @@ export default function CalendarPage() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Edit modal */}
+      <CalendarEventEditModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        event={editEvent}
+        onSave={handleEditSave}
+        isPending={updateVisit.isPending || updateTask.isPending || updateMarketingLead.isPending || updateContact.isPending}
+      />
+
+      {/* Delete confirmation */}
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="¿Eliminar evento?"
+        description="¿Estás seguro? Esto eliminará también el registro original."
+        onConfirm={handleDelete}
+        isPending={isPending}
+      />
 
       <ScheduleVisitModal open={scheduleOpen} onOpenChange={setScheduleOpen} />
     </div>

@@ -142,8 +142,31 @@ export function useUploadDocument() {
 export function useDeleteDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, propertyId }: { id: string; propertyId: string }) => {
+    mutationFn: async ({ id, propertyId, fileUrl }: { id: string; propertyId: string; fileUrl?: string }) => {
+      // Try to delete the file from storage
+      if (fileUrl) {
+        const bucketBase = supabase.storage.from("property-documents").getPublicUrl("").data.publicUrl;
+        const filePath = fileUrl.replace(bucketBase, "");
+        if (filePath) {
+          await supabase.storage.from("property-documents").remove([filePath]);
+        }
+      }
       const { error } = await supabase.from("property_documents").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) =>
+      qc.invalidateQueries({ queryKey: ["property_documents", vars.propertyId] }),
+  });
+}
+
+export function useRenameDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, propertyId, customName }: { id: string; propertyId: string; customName: string }) => {
+      const { error } = await supabase
+        .from("property_documents")
+        .update({ custom_name: customName })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_, vars) =>

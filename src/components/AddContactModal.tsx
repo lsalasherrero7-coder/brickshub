@@ -24,6 +24,10 @@ export interface ContactPrefill {
   // Link back to origin
   lead_id?: string;         // captacion lead
   marketing_lead_id?: string; // marketing lead
+  // Next action to transfer
+  next_action_type?: string;
+  next_action_date?: string;
+  next_action_note?: string;
 }
 
 interface Props {
@@ -102,18 +106,45 @@ export default function AddContactModal({ open, onOpenChange, prefill }: Props) 
       const { data: contact, error } = await supabase.from("contacts").insert(contactInsert).select().single();
       if (error) throw error;
 
-      // If marketing lead, link the contact back
+      // Transfer next action from lead to contact if present
+      if (contact && prefill?.next_action_type && prefill?.next_action_date) {
+        await supabase.from("contacts").update({
+          next_action_type: prefill.next_action_type,
+          next_action_date: prefill.next_action_date,
+          next_action_note: prefill.next_action_note || null,
+        }).eq("id", contact.id);
+      }
+
+      // If marketing lead, link the contact back and transfer interactions
       if (prefill?.marketing_lead_id && contact) {
         await supabase.from("marketing_leads")
           .update({ contact_id: contact.id })
           .eq("id", prefill.marketing_lead_id);
+
+        // Copy all marketing lead interactions to contact interactions
+        const { data: interactions } = await supabase
+          .from("marketing_lead_interactions")
+          .select("*")
+          .eq("lead_id", prefill.marketing_lead_id)
+          .order("created_at", { ascending: true });
+
+        if (interactions && interactions.length > 0) {
+          const contactInteractions = interactions.map((i) => ({
+            contact_id: contact.id,
+            interaction_type: i.interaction_type,
+            notes: i.notes,
+            created_at: i.created_at,
+          }));
+          await supabase.from("contact_interactions").insert(contactInteractions);
+        }
+
         queryClient.invalidateQueries({ queryKey: ["marketing_leads"] });
         queryClient.invalidateQueries({ queryKey: ["marketing_lead"] });
+        queryClient.invalidateQueries({ queryKey: ["contact_interactions"] });
       }
 
       // If captacion lead, link the contact back
       if (prefill?.lead_id && contact) {
-        // Already linked via lead_id in contact, but also update lead if needed
         queryClient.invalidateQueries({ queryKey: ["leads"] });
       }
 

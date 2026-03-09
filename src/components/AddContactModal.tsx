@@ -24,6 +24,10 @@ export interface ContactPrefill {
   // Link back to origin
   lead_id?: string;         // captacion lead
   marketing_lead_id?: string; // marketing lead
+  // Next action to transfer
+  next_action_type?: string;
+  next_action_date?: string;
+  next_action_note?: string;
 }
 
 interface Props {

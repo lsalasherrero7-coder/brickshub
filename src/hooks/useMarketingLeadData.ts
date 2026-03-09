@@ -40,12 +40,18 @@ function buildMarketingNextActionEvent(lead: MarketingLead) {
   const start = new Date(lead.next_action_date!);
   const end = new Date(start.getTime() + 30 * 60 * 1000);
   const actionType = lead.next_action_type || "Próxima acción";
-  const notes = lead.next_action_note?.trim() || "";
   const location = [lead.address, lead.municipality].filter(Boolean).join(", ") || undefined;
+  const descParts = [`Tipo: ${actionType}`, `Lead: ${lead.name}`];
+  if (lead.phone) descParts.push(`Teléfono: ${lead.phone}`);
+  if (lead.email) descParts.push(`Email: ${lead.email}`);
+  if (lead.municipality) descParts.push(`Municipio: ${lead.municipality}`);
+  if (lead.address) descParts.push(`Dirección: ${lead.address}`);
+  if (lead.status) descParts.push(`Estado: ${lead.status}`);
+  if (lead.next_action_note?.trim()) descParts.push(`Notas: ${lead.next_action_note.trim()}`);
 
   return {
-    summary: `Próxima acción · ${lead.name}`,
-    description: `Tipo: ${actionType}\nContacto: ${lead.name}${notes ? `\nNotas: ${notes}` : ""}`,
+    summary: `${actionType} - ${lead.name}`,
+    description: descParts.join("\n"),
     start_datetime: start.toISOString(),
     end_datetime: end.toISOString(),
     location,

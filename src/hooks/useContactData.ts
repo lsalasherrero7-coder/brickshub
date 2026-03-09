@@ -1,6 +1,36 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Contact, ContactNote, ContactTask } from "@/lib/types";
+import { syncContactNextActionToCalendar, syncContactTaskToCalendar } from "@/hooks/useGoogleCalendar";
+
+function buildContactTaskEvent(task: ContactTask, contactName: string, contactAddress?: string | null) {
+  const start = new Date(task.due_date);
+  const end = new Date(start.getTime() + 30 * 60 * 1000);
+  const notes = task.description?.trim() || "";
+
+  return {
+    summary: `Tarea · ${contactName}`,
+    description: `Tipo: ${task.title}\nContacto: ${contactName}${notes ? `\nNotas: ${notes}` : ""}`,
+    start_datetime: start.toISOString(),
+    end_datetime: end.toISOString(),
+    location: contactAddress || undefined,
+  };
+}
+
+function buildContactNextActionEvent(contact: Contact) {
+  const start = new Date(contact.next_action_date!);
+  const end = new Date(start.getTime() + 30 * 60 * 1000);
+  const actionType = contact.next_action_type || "Próxima acción";
+  const notes = contact.next_action_note?.trim() || "";
+
+  return {
+    summary: `Próxima acción · ${contact.name}`,
+    description: `Tipo: ${actionType}\nContacto: ${contact.name}${notes ? `\nNotas: ${notes}` : ""}`,
+    start_datetime: start.toISOString(),
+    end_datetime: end.toISOString(),
+    location: contact.address || undefined,
+  };
+}
 
 export function useContacts() {
   return useQuery({
@@ -43,10 +73,22 @@ export function useUpdateContact() {
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return data as Contact;
     },
-    onSuccess: () => {
+    onSuccess: async (data, vars) => {
       qc.invalidateQueries({ queryKey: ["contacts"] });
+
+      const nextActionTouched =
+        "next_action_date" in vars || "next_action_type" in vars || "next_action_note" in vars;
+
+      if (!nextActionTouched) return;
+
+      if (data.next_action_date && data.next_action_type) {
+        const event = buildContactNextActionEvent(data);
+        await syncContactNextActionToCalendar("update", data.id, event);
+      } else {
+        await syncContactNextActionToCalendar("delete", data.id);
+      }
     },
   });
 }
@@ -152,17 +194,28 @@ export function useAllContactTasks() {
 export function useCreateContactTask() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (task: { contact_id: string; title: string; description?: string; due_date: string; }) => {
+    mutationFn: async (task: { contact_id: string; title: string; description?: string; due_date: string }) => {
       const { data, error } = await supabase
         .from("contact_tasks")
         .insert(task)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return data as ContactTask;
     },
-    onSuccess: () => {
+    onSuccess: async (task) => {
       qc.invalidateQueries({ queryKey: ["contact_tasks"] });
+
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("name, address")
+        .eq("id", task.contact_id)
+        .single();
+
+      if (!contact?.name) return;
+
+      const event = buildContactTaskEvent(task, contact.name, contact.address);
+      await syncContactTaskToCalendar("create", task.id, event);
     },
   });
 }

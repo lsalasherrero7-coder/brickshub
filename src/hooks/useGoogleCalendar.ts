@@ -2,6 +2,46 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type CalendarAction = "create" | "update" | "delete";
+
+type CalendarEventPayload = {
+  summary: string;
+  description?: string;
+  start_datetime: string;
+  end_datetime: string;
+  location?: string;
+};
+
+async function syncEntityToCalendar(
+  action: CalendarAction,
+  entityType: "visit" | "contact_task" | "contact_next_action" | "marketing_lead_next_action",
+  entityId: string,
+  event?: CalendarEventPayload
+) {
+  try {
+    const { data, error } = await supabase.functions.invoke("google-calendar-sync", {
+      body: {
+        action,
+        entity_type: entityType,
+        entity_id: entityId,
+        event,
+      },
+    });
+
+    if (error) {
+      console.warn(`[Google Calendar] sync failed (${entityType}/${entityId})`, error.message);
+      return;
+    }
+
+    if (data?.error) {
+      console.warn(`[Google Calendar] sync warning (${entityType}/${entityId})`, data.error);
+    }
+  } catch {
+    // Silent fail - don't block CRM operations
+    console.warn("Google Calendar sync failed", entityType, entityId);
+  }
+}
+
 export function useGoogleCalendarStatus() {
   return useQuery({
     queryKey: ["google-calendar-status"],
@@ -57,27 +97,34 @@ export function useGoogleCalendarDisconnect() {
 }
 
 export async function syncVisitToCalendar(
-  action: "create" | "update" | "delete",
+  action: CalendarAction,
   entityId: string,
-  event?: {
-    summary: string;
-    description?: string;
-    start_datetime: string;
-    end_datetime: string;
-    location?: string;
-  }
+  event?: CalendarEventPayload
 ) {
-  try {
-    await supabase.functions.invoke("google-calendar-sync", {
-      body: {
-        action,
-        entity_type: "visit",
-        entity_id: entityId,
-        event,
-      },
-    });
-  } catch {
-    // Silent fail - don't block CRM operations
-    console.warn("Google Calendar sync failed for visit", entityId);
-  }
+  await syncEntityToCalendar(action, "visit", entityId, event);
 }
+
+export async function syncContactTaskToCalendar(
+  action: CalendarAction,
+  entityId: string,
+  event?: CalendarEventPayload
+) {
+  await syncEntityToCalendar(action, "contact_task", entityId, event);
+}
+
+export async function syncContactNextActionToCalendar(
+  action: CalendarAction,
+  entityId: string,
+  event?: CalendarEventPayload
+) {
+  await syncEntityToCalendar(action, "contact_next_action", entityId, event);
+}
+
+export async function syncMarketingLeadNextActionToCalendar(
+  action: CalendarAction,
+  entityId: string,
+  event?: CalendarEventPayload
+) {
+  await syncEntityToCalendar(action, "marketing_lead_next_action", entityId, event);
+}
+

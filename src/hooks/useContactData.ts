@@ -270,13 +270,13 @@ export function useUpdateContactTask() {
 
       const { data: contact } = await supabase
         .from("contacts")
-        .select("name, address")
+        .select("name, address, phone, email, temperature_tag, status_tag")
         .eq("id", task.contact_id)
         .single();
 
       if (!contact?.name) return;
 
-      const event = buildContactTaskEvent(task, contact.name, contact.address);
+      const event = buildContactTaskEvent(task, contact.name, contact);
       await syncContactTaskToCalendar("update", task.id, event);
     },
   });

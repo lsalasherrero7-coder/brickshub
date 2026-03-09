@@ -301,6 +301,8 @@ export function useDeleteContact() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, cascades }: { id: string; cascades: string[] }) => {
+      // Always delete interactions (FK constraint)
+      await supabase.from("contact_interactions").delete().eq("contact_id", id);
       if (cascades.includes("notes")) {
         await supabase.from("contact_notes").delete().eq("contact_id", id);
       }

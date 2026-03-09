@@ -362,7 +362,7 @@ export default function CalendarPage() {
                           onClick={() => setSelectedVisit(v)}
                           className="truncate text-left flex-1 min-w-0"
                         >
-                          {format(new Date(v.visit_date), "HH:mm")} {v.client_first_name}
+                          {format(new Date(v.visit_date), "HH:mm")} Visita - {v.client_first_name}
                         </button>
                         <ActionButtons
                           onEdit={(e) => openEditVisit(v, e)}

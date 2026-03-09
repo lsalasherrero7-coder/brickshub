@@ -72,6 +72,9 @@ export default function MarketingLeadsPage() {
       address: lead.address || "",
       municipality: lead.municipality || "",
       marketing_lead_id: lead.id,
+      next_action_type: lead.next_action_type || undefined,
+      next_action_date: lead.next_action_date || undefined,
+      next_action_note: lead.next_action_note || undefined,
     });
     setContactModalOpen(true);
   };

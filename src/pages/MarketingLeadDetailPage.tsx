@@ -146,11 +146,9 @@ export default function MarketingLeadDetailPage() {
           <h1 className="font-display text-2xl font-bold">{lead.name}</h1>
           <p className="text-muted-foreground text-sm">Lead de marketing</p>
         </div>
-        {!lead.contact_id && (
-          <Button variant="outline" onClick={handleAddToContacts}>
-            <UserPlus className="w-4 h-4 mr-2" />Añadir a Contactos
-          </Button>
-        )}
+        <Button variant="outline" onClick={handleAddToContacts}>
+          <UserPlus className="w-4 h-4 mr-2" />Añadir a Contactos
+        </Button>
         <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteOpen(true)}>
           <Trash2 className="w-4 h-4 mr-2" />Eliminar
         </Button>

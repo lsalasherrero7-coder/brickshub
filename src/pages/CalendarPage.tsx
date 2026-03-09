@@ -405,7 +405,7 @@ export default function CalendarPage() {
                           className="truncate flex-1 min-w-0"
                         >
                           <Megaphone className="w-2.5 h-2.5 inline mr-0.5" />
-                          {format(new Date(l.next_action_date), "HH:mm")} {l.name}
+                          {format(new Date(l.next_action_date), "HH:mm")} {l.next_action_type || "Acción"} - {l.name}
                         </Link>
                         <ActionButtons
                           onEdit={(e) => openEditLeadAction(l, e)}

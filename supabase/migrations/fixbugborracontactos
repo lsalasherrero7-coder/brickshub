@@ -1,8 +1,0 @@
-ALTER TABLE public.marketing_leads 
-  DROP CONSTRAINT marketing_leads_contact_id_fkey;
-
-ALTER TABLE public.marketing_leads 
-  ADD CONSTRAINT marketing_leads_contact_id_fkey 
-  FOREIGN KEY (contact_id) 
-  REFERENCES public.contacts(id) 
-  ON DELETE SET NULL;

@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil, UserPlus } from "lucide-react";
+import { Plus, Search, Settings, Trash2, ArrowUpDown, Pencil, UserPlus, Download } from "lucide-react";
 import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
 import AddContactModal, { type ContactPrefill } from "@/components/AddContactModal";
 import type { MarketingLead } from "@/hooks/useMarketingLeadData";
@@ -134,6 +134,28 @@ export default function MarketingLeadsPage() {
     toast({ title: "Lead eliminado" });
     setDeleteId(null);
   };
+  const handleExportCSV = () => {
+    if (!filtered.length) return;
+    const headers = ["Nombre", "Teléfono", "Email", "Campaña", "Estado", "Próx. acción", "Fecha acción", "Entrada"];
+    const rows = filtered.map((l) => [
+      l.name,
+      l.phone || "",
+      l.email || "",
+      l.campaign?.name || "",
+      l.status,
+      l.next_action_type || "",
+      l.next_action_date ? format(parseISO(l.next_action_date), "dd/MM/yyyy HH:mm", { locale: es }) : "",
+      format(parseISO(l.created_at), "dd/MM/yyyy", { locale: es }),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "leads.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) return <div className="p-8 animate-pulse"><div className="h-8 bg-muted rounded w-48 mb-4" /><div className="h-64 bg-muted rounded" /></div>;
 
@@ -147,6 +169,9 @@ export default function MarketingLeadsPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setCampaignsOpen(true)}>
             <Settings className="w-4 h-4 mr-1" /> Campañas
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="w-4 h-4 mr-1" /> Exportar CSV
           </Button>
           <Button onClick={() => setAddOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> Nuevo Lead

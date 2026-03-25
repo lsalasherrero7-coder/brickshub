@@ -16,130 +16,21 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-type MovementType = "income" | "expense";
-type MovementStatus = "pending" | "paid" | "collected";
-
-interface AccountingMovement {
-  id: string;
-  movement_date: string;
-  type: MovementType;
-  concept: string;
-  category: string;
-  base_amount: number;
-  vat_rate: number;
-  vat_amount: number;
-  total_amount: number;
-  payment_method: string;
-  status: MovementStatus;
-  deductible: boolean;
-  fiscal_year: number;
-  fiscal_quarter: number;
-  notes?: string;
-  has_document?: boolean;
-}
-
-const MOCK_MOVEMENTS: AccountingMovement[] = [
-  {
-    id: "1",
-    movement_date: "2026-03-22",
-    type: "income",
-    concept: "Honorarios venta vivienda Calle Iturrama 14",
-    category: "Honorarios venta",
-    base_amount: 4500,
-    vat_rate: 21,
-    vat_amount: 945,
-    total_amount: 5445,
-    payment_method: "Transferencia",
-    status: "collected",
-    deductible: false,
-    fiscal_year: 2026,
-    fiscal_quarter: 1,
-    notes: "Operación cerrada y cobrada",
-    has_document: true,
-  },
-  {
-    id: "2",
-    movement_date: "2026-03-20",
-    type: "expense",
-    concept: "Campaña Meta Ads captación alquiler",
-    category: "Publicidad y marketing",
-    base_amount: 120,
-    vat_rate: 21,
-    vat_amount: 25.2,
-    total_amount: 145.2,
-    payment_method: "Tarjeta",
-    status: "paid",
-    deductible: true,
-    fiscal_year: 2026,
-    fiscal_quarter: 1,
-    notes: "Campaña de generación de leads",
-    has_document: true,
-  },
-  {
-    id: "3",
-    movement_date: "2026-03-18",
-    type: "expense",
-    concept: "Suscripción CRM / software",
-    category: "Software y suscripciones",
-    base_amount: 49,
-    vat_rate: 21,
-    vat_amount: 10.29,
-    total_amount: 59.29,
-    payment_method: "Tarjeta",
-    status: "paid",
-    deductible: true,
-    fiscal_year: 2026,
-    fiscal_quarter: 1,
-    notes: "",
-    has_document: true,
-  },
-  {
-    id: "4",
-    movement_date: "2026-03-15",
-    type: "income",
-    concept: "Honorarios alquiler piso Ensanche",
-    category: "Honorarios alquiler",
-    base_amount: 700,
-    vat_rate: 21,
-    vat_amount: 147,
-    total_amount: 847,
-    payment_method: "Transferencia",
-    status: "pending",
-    deductible: false,
-    fiscal_year: 2026,
-    fiscal_quarter: 1,
-    notes: "Pendiente de cobro",
-    has_document: false,
-  },
-  {
-    id: "5",
-    movement_date: "2026-03-12",
-    type: "expense",
-    concept: "Gestoría trimestral",
-    category: "Gestoría y asesoría",
-    base_amount: 90,
-    vat_rate: 21,
-    vat_amount: 18.9,
-    total_amount: 108.9,
-    payment_method: "Transferencia",
-    status: "paid",
-    deductible: true,
-    fiscal_year: 2026,
-    fiscal_quarter: 1,
-    notes: "",
-    has_document: true,
-  },
-];
+import {
+  useAccountingMovements,
+  type AccountingMovement,
+  type AccountingMovementStatus,
+  type AccountingMovementType,
+} from "@/hooks/useAccountingData";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",
     currency: "EUR",
-  }).format(value);
+  }).format(Number(value || 0));
 }
 
-function getStatusLabel(status: MovementStatus) {
+function getStatusLabel(status: AccountingMovementStatus) {
   switch (status) {
     case "pending":
       return "Pendiente";
@@ -152,7 +43,7 @@ function getStatusLabel(status: MovementStatus) {
   }
 }
 
-function getTypeLabel(type: MovementType) {
+function getTypeLabel(type: AccountingMovementType) {
   return type === "income" ? "Ingreso" : "Gasto";
 }
 
@@ -165,17 +56,19 @@ function getQuarterFromDate(dateString: string) {
 }
 
 export default function ContabilidadPage() {
+  const { data: movements = [], isLoading } = useAccountingMovements();
+
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | MovementType>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | MovementStatus>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | AccountingMovementType>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | AccountingMovementStatus>("all");
   const [quarterFilter, setQuarterFilter] = useState<"all" | "1" | "2" | "3" | "4">("all");
-  const [yearFilter, setYearFilter] = useState("2026");
+  const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
 
   const filteredMovements = useMemo(() => {
-    return MOCK_MOVEMENTS.filter((movement) => {
+    return movements.filter((movement: AccountingMovement) => {
       const matchesSearch =
         movement.concept.toLowerCase().includes(search.toLowerCase()) ||
-        movement.category.toLowerCase().includes(search.toLowerCase());
+        movement.category_code.toLowerCase().includes(search.toLowerCase());
 
       const matchesType = typeFilter === "all" || movement.type === typeFilter;
       const matchesStatus = statusFilter === "all" || movement.status === statusFilter;
@@ -184,30 +77,36 @@ export default function ContabilidadPage() {
         quarterFilter === "all" ||
         String(getQuarterFromDate(movement.movement_date)) === quarterFilter;
 
-      return matchesSearch && matchesType && matchesStatus && matchesYear && matchesQuarter;
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesStatus &&
+        matchesYear &&
+        matchesQuarter
+      );
     });
-  }, [search, typeFilter, statusFilter, yearFilter, quarterFilter]);
+  }, [movements, search, typeFilter, statusFilter, yearFilter, quarterFilter]);
 
   const summary = useMemo(() => {
     const incomeBase = filteredMovements
       .filter((m) => m.type === "income")
-      .reduce((sum, m) => sum + m.base_amount, 0);
+      .reduce((sum, m) => sum + Number(m.base_amount || 0), 0);
 
     const expenseBase = filteredMovements
       .filter((m) => m.type === "expense")
-      .reduce((sum, m) => sum + m.base_amount, 0);
+      .reduce((sum, m) => sum + Number(m.base_amount || 0), 0);
 
     const vatRepercutido = filteredMovements
       .filter((m) => m.type === "income")
-      .reduce((sum, m) => sum + m.vat_amount, 0);
+      .reduce((sum, m) => sum + Number(m.vat_amount || 0), 0);
 
     const vatSoportado = filteredMovements
       .filter((m) => m.type === "expense")
-      .reduce((sum, m) => sum + m.vat_amount, 0);
+      .reduce((sum, m) => sum + Number(m.vat_amount || 0), 0);
 
     const deductibleExpenses = filteredMovements
       .filter((m) => m.type === "expense" && m.deductible)
-      .reduce((sum, m) => sum + m.base_amount, 0);
+      .reduce((sum, m) => sum + Number(m.base_amount || 0), 0);
 
     const netProfit = incomeBase - expenseBase;
     const vatResult = vatRepercutido - vatSoportado;
@@ -225,6 +124,28 @@ export default function ContabilidadPage() {
       movementsCount: filteredMovements.length,
     };
   }, [filteredMovements]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-48 rounded bg-muted animate-pulse" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="h-16 rounded bg-muted animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="h-64 rounded bg-muted animate-pulse" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -262,8 +183,12 @@ export default function ContabilidadPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{formatCurrency(summary.incomeBase)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Base imponible del periodo filtrado</p>
+            <div className="text-2xl font-semibold">
+              {formatCurrency(summary.incomeBase)}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Base imponible del periodo filtrado
+            </p>
           </CardContent>
         </Card>
 
@@ -273,8 +198,12 @@ export default function ContabilidadPage() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{formatCurrency(summary.expenseBase)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Gastos registrados del periodo</p>
+            <div className="text-2xl font-semibold">
+              {formatCurrency(summary.expenseBase)}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Gastos registrados del periodo
+            </p>
           </CardContent>
         </Card>
 
@@ -284,8 +213,12 @@ export default function ContabilidadPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{formatCurrency(summary.netProfit)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">Ingresos menos gastos</p>
+            <div className="text-2xl font-semibold">
+              {formatCurrency(summary.netProfit)}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Ingresos menos gastos
+            </p>
           </CardContent>
         </Card>
 
@@ -295,8 +228,12 @@ export default function ContabilidadPage() {
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{formatCurrency(summary.vatResult)}</div>
-            <p className="mt-1 text-xs text-muted-foreground">IVA repercutido menos soportado</p>
+            <div className="text-2xl font-semibold">
+              {formatCurrency(summary.vatResult)}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              IVA repercutido menos soportado
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -307,7 +244,9 @@ export default function ContabilidadPage() {
             <CardTitle className="text-sm font-medium">IVA repercutido</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold">{formatCurrency(summary.vatRepercutido)}</div>
+            <div className="text-xl font-semibold">
+              {formatCurrency(summary.vatRepercutido)}
+            </div>
           </CardContent>
         </Card>
 
@@ -316,7 +255,9 @@ export default function ContabilidadPage() {
             <CardTitle className="text-sm font-medium">IVA soportado</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold">{formatCurrency(summary.vatSoportado)}</div>
+            <div className="text-xl font-semibold">
+              {formatCurrency(summary.vatSoportado)}
+            </div>
           </CardContent>
         </Card>
 
@@ -325,7 +266,9 @@ export default function ContabilidadPage() {
             <CardTitle className="text-sm font-medium">IRPF estimado</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold">{formatCurrency(summary.estimatedIrpf)}</div>
+            <div className="text-xl font-semibold">
+              {formatCurrency(summary.estimatedIrpf)}
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">
               Estimación operativa. Validar con gestoría.
             </p>
@@ -360,7 +303,9 @@ export default function ContabilidadPage() {
 
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as "all" | MovementType)}
+              onChange={(e) =>
+                setTypeFilter(e.target.value as "all" | AccountingMovementType)
+              }
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="all">Todos los tipos</option>
@@ -370,7 +315,9 @@ export default function ContabilidadPage() {
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as "all" | MovementStatus)}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as "all" | AccountingMovementStatus)
+              }
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="all">Todos los estados</option>
@@ -381,7 +328,9 @@ export default function ContabilidadPage() {
 
             <select
               value={quarterFilter}
-              onChange={(e) => setQuarterFilter(e.target.value as "all" | "1" | "2" | "3" | "4")}
+              onChange={(e) =>
+                setQuarterFilter(e.target.value as "all" | "1" | "2" | "3" | "4")
+              }
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="all">Todos los trimestres</option>
@@ -427,7 +376,10 @@ export default function ContabilidadPage() {
               <tbody>
                 {filteredMovements.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-3 py-10 text-center text-muted-foreground">
+                    <td
+                      colSpan={10}
+                      className="px-3 py-10 text-center text-muted-foreground"
+                    >
                       No hay movimientos para los filtros seleccionados.
                     </td>
                   </tr>
@@ -435,7 +387,9 @@ export default function ContabilidadPage() {
                   filteredMovements.map((movement) => (
                     <tr key={movement.id} className="border-b last:border-0">
                       <td className="px-3 py-3">
-                        {format(new Date(movement.movement_date), "dd MMM yyyy", { locale: es })}
+                        {format(new Date(movement.movement_date), "dd MMM yyyy", {
+                          locale: es,
+                        })}
                       </td>
                       <td className="px-3 py-3">
                         <span
@@ -449,20 +403,24 @@ export default function ContabilidadPage() {
                         </span>
                       </td>
                       <td className="px-3 py-3 font-medium">{movement.concept}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{movement.category}</td>
-                      <td className="px-3 py-3">{formatCurrency(movement.base_amount)}</td>
-                      <td className="px-3 py-3">
-                        {formatCurrency(movement.vat_amount)} ({movement.vat_rate}%)
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {movement.category_code}
                       </td>
-                      <td className="px-3 py-3 font-medium">{formatCurrency(movement.total_amount)}</td>
-                      <td className="px-3 py-3">{getStatusLabel(movement.status)}</td>
-                      <td className="px-3 py-3">{movement.payment_method}</td>
                       <td className="px-3 py-3">
-                        {movement.has_document ? (
-                          <span className="text-green-700">Adjunto</span>
-                        ) : (
-                          <span className="text-muted-foreground">Sin documento</span>
-                        )}
+                        {formatCurrency(Number(movement.base_amount))}
+                      </td>
+                      <td className="px-3 py-3">
+                        {formatCurrency(Number(movement.vat_amount))} ({movement.vat_rate}%)
+                      </td>
+                      <td className="px-3 py-3 font-medium">
+                        {formatCurrency(Number(movement.total_amount))}
+                      </td>
+                      <td className="px-3 py-3">{getStatusLabel(movement.status)}</td>
+                      <td className="px-3 py-3">
+                        {movement.payment_method || "-"}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="text-muted-foreground">Pendiente</span>
                       </td>
                     </tr>
                   ))

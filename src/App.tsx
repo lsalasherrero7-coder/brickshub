@@ -54,7 +54,7 @@ function ProtectedRoutes() {
         <Route path="/hipoteca" element={<HipotecaPage />} />
         <Route path="/usuarios" element={<AdminUsersPage />} />
         <Route path="*" element={<NotFound />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="/contabilidad" element={<ContabilidadPage />} />
       </Routes>
     </AppLayout>
   );

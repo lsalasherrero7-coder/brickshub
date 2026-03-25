@@ -159,12 +159,19 @@ export default function NewMovementDialog({ open, onOpenChange }: Props) {
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">Selecciona una categoría</option>
+                <div className="text-xs text-muted-foreground">
                 {categories.map((category) => (
                   <option key={category.id} value={category.code}>
                     {category.name}
                   </option>
                 ))}
               </select>
+                <div className="text-xs text-muted-foreground mt-2">
+                  <p>Tipo actual: {movementType}</p>
+                  <p>Categorías cargando: {categoriesLoading ? "sí" : "no"}</p>
+                  <p>Número de categorías: {categories.length}</p>
+                  <p>Error: {categoriesError ? String(categoriesError) : "ninguno"}</p>
+                  </div>
             </div>
 
             <div>

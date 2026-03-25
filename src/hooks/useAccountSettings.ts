@@ -8,6 +8,7 @@ export interface AccountingSettings {
   updated_at: string;
 }
 
+// 👉 GET SETTINGS
 export function useAccountSettings() {
   return useQuery({
     queryKey: ["account_settings"],
@@ -25,6 +26,7 @@ export function useAccountSettings() {
   });
 }
 
+// 👉 UPDATE SETTINGS
 export function useUpdateAccountingSettings() {
   const qc = useQueryClient();
 

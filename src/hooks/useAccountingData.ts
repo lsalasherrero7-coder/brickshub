@@ -66,16 +66,23 @@ export function useAccountingCategories(type?: AccountingMovementType) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("accounting_categories")
-        .select("*")
-        .order("sort_order", { ascending: true });
+        .select("*");
 
-      if (error) throw error;
+      if (error) {
+        console.error("SUPABASE ERROR:", error);
+        throw error;
+      }
 
-      const rows = (data ?? []) as AccountingCategory[];
+      console.log("CATEGORIES RAW:", data);
 
-      if (!type) return rows;
+      if (!data) return [];
 
-      return rows.filter((row) => String(row.type).trim().toLowerCase() === type);
+      if (!type) return data;
+
+      return data.filter(
+        (row: any) =>
+          String(row.type).trim().toLowerCase() === type
+      );
     },
   });
 }

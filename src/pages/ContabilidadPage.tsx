@@ -24,9 +24,9 @@ import {
   type AccountingMovementType,
 } from "@/hooks/useAccountingData";
 import {
-  useAccountingSettings,
+  useAccountSettings,
   useUpdateAccountingSettings,
-} from "@/hooks/useAccountingSettings";
+} from "@/hooks/useAccountSettings";
 import NewMovementDialog from "@/components/accounting/NewMovementDialog";
 
 function formatCurrency(value: number) {
@@ -63,7 +63,7 @@ function getQuarterFromDate(dateString: string) {
 
 export default function ContabilidadPage() {
   const { data: movements = [], isLoading } = useAccountingMovements();
-  const { data: settings } = useAccountingSettings();
+  const { data: settings } = useAccountSettings();
   const updateSettings = useUpdateAccountingSettings();
 
   const [search, setSearch] = useState("");

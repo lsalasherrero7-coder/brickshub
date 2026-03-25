@@ -67,8 +67,11 @@ export default function NewMovementDialog({ open, onOpenChange }: Props) {
   });
 
   const movementType = watch("type");
-  const { data: categories = [] } = useAccountingCategories(movementType);
-
+  const {
+  data: categories = [],
+  isLoading: categoriesLoading,
+  error: categoriesError,
+} = useAccountingCategories(movementType);
   useEffect(() => {
     if (movementType === "income") {
       setValue("status", "collected");

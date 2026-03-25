@@ -64,19 +64,21 @@ export function useAccountingCategories(type?: AccountingMovementType) {
   return useQuery({
     queryKey: ["accounting_categories", type],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("accounting_categories")
         .select("*")
-        .eq("is_active", true)
         .order("sort_order", { ascending: true });
 
-      if (type) {
-        query = query.eq("type", type);
+      if (error) {
+        console.error("Error cargando categorías:", error);
+        throw error;
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []) as AccountingCategory[];
+      const rows = (data ?? []) as AccountingCategory[];
+
+      if (!type) return rows;
+
+      return rows.filter((row) => row.type === type);
     },
   });
 }

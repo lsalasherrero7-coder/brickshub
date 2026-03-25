@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -41,6 +41,27 @@ function todayString() {
   return new Date().toISOString().split("T")[0];
 }
 
+const FALLBACK_INCOME_CATEGORIES = [
+  { code: "honorarios_venta", name: "Honorarios venta" },
+  { code: "honorarios_alquiler", name: "Honorarios alquiler" },
+  { code: "servicios_marketing", name: "Servicios marketing" },
+  { code: "servicios_adicionales", name: "Servicios adicionales" },
+  { code: "otros_ingresos", name: "Otros ingresos" },
+];
+
+const FALLBACK_EXPENSE_CATEGORIES = [
+  { code: "publicidad_marketing", name: "Publicidad y marketing" },
+  { code: "portales_inmobiliarios", name: "Portales inmobiliarios" },
+  { code: "software_suscripciones", name: "Software y suscripciones" },
+  { code: "gestoria_asesoria", name: "Gestoría y asesoría" },
+  { code: "telefonia_internet", name: "Telefonía e internet" },
+  { code: "transporte_desplazamientos", name: "Transporte y desplazamientos" },
+  { code: "material_oficina", name: "Material de oficina" },
+  { code: "formacion", name: "Formación" },
+  { code: "servicios_profesionales", name: "Servicios profesionales" },
+  { code: "otros_gastos", name: "Otros gastos" },
+];
+
 export default function NewMovementDialog({ open, onOpenChange }: Props) {
   const createMovement = useCreateAccountingMovement();
 
@@ -67,11 +88,25 @@ export default function NewMovementDialog({ open, onOpenChange }: Props) {
   });
 
   const movementType = watch("type");
+
   const {
-  data: categories = [],
-  isLoading: categoriesLoading,
-  error: categoriesError,
-} = useAccountingCategories(movementType);
+    data: dbCategories = [],
+    error: categoriesError,
+  } = useAccountingCategories(movementType);
+
+  const categories = useMemo(() => {
+    if (dbCategories.length > 0) {
+      return dbCategories.map((category) => ({
+        code: category.code,
+        name: category.name,
+      }));
+    }
+
+    return movementType === "income"
+      ? FALLBACK_INCOME_CATEGORIES
+      : FALLBACK_EXPENSE_CATEGORIES;
+  }, [dbCategories, movementType]);
+
   useEffect(() => {
     if (movementType === "income") {
       setValue("status", "collected");
@@ -99,6 +134,7 @@ export default function NewMovementDialog({ open, onOpenChange }: Props) {
       });
 
       toast.success("Movimiento creado correctamente");
+
       reset({
         movement_date: todayString(),
         type: "expense",
@@ -111,6 +147,7 @@ export default function NewMovementDialog({ open, onOpenChange }: Props) {
         deductible: true,
         notes: "",
       });
+
       onOpenChange(false);
     } catch (err: any) {
       toast.error(err.message || "Error al crear el movimiento");
@@ -159,19 +196,18 @@ export default function NewMovementDialog({ open, onOpenChange }: Props) {
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">Selecciona una categoría</option>
-                <div className="text-xs text-muted-foreground">
                 {categories.map((category) => (
-                  <option key={category.id} value={category.code}>
+                  <option key={category.code} value={category.code}>
                     {category.name}
                   </option>
                 ))}
               </select>
-                <div className="text-xs text-muted-foreground mt-2">
-                  <p>Tipo actual: {movementType}</p>
-                  <p>Categorías cargando: {categoriesLoading ? "sí" : "no"}</p>
-                  <p>Número de categorías: {categories.length}</p>
-                  <p>Error: {categoriesError ? String(categoriesError) : "ninguno"}</p>
-                  </div>
+
+              {categoriesError ? (
+                <p className="mt-2 text-xs text-amber-600">
+                  No se han podido leer las categorías desde Supabase. Se está usando una lista local.
+                </p>
+              ) : null}
             </div>
 
             <div>

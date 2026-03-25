@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export interface AccountSettings {
+export interface AccountingSettings {
   id: string;
   irpf_rate: number;
   created_at: string;
@@ -10,21 +10,22 @@ export interface AccountSettings {
 
 export function useAccountSettings() {
   return useQuery({
-    queryKey: ["accounting_settings"],
+    queryKey: ["account_settings"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("accounting_settings")
         .select("*")
-        .limit(1)
-        .single();
+        .limit(1);
 
       if (error) throw error;
-      return data as AccountSettings;
+      if (!data || data.length === 0) return null;
+
+      return data[0] as AccountingSettings;
     },
   });
 }
 
-export function useUpdateAccountSettings() {
+export function useUpdateAccountingSettings() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -46,10 +47,10 @@ export function useUpdateAccountSettings() {
         .single();
 
       if (error) throw error;
-      return data as AccountSettings;
+      return data as AccountingSettings;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["accounting_settings"] });
+      qc.invalidateQueries({ queryKey: ["account_settings"] });
     },
   });
 }

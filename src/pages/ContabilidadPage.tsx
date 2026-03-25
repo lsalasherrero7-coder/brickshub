@@ -65,6 +65,9 @@ export default function ContabilidadPage() {
   const { data: movements = [], isLoading } = useAccountingMovements();
 
   const [search, setSearch] = useState("");
+  const { data: settings } = useAccountingSettings();
+  const updateSettings = useUpdateAccountingSettings();
+  const [irpfRateInput, setIrpfRateInput] = useState("20");
   const [typeFilter, setTypeFilter] = useState<"all" | AccountingMovementType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | AccountingMovementStatus>("all");
   const [quarterFilter, setQuarterFilter] = useState<"all" | "1" | "2" | "3" | "4">("all");

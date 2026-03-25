@@ -126,7 +126,8 @@ export default function ContabilidadPage() {
     const netProfit = incomeBase - expenseBase;
     const vatResult = vatRepercutido - vatSoportado;
     const estimatedIrpfBase = incomeBase - deductibleExpenses;
-    const estimatedIrpf = estimatedIrpfBase > 0 ? estimatedIrpfBase * 0.2 : 0;
+    const irpfRate = Number(irpfRateInput || 0) / 100;
+    const estimatedIrpf = estimatedIrpfBase > 0 ? estimatedIrpfBase * irpfRate : 0;
 
     return {
       incomeBase,

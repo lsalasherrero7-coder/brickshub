@@ -1,4 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+useEffect(() => {
+  if (settings?.irpf_rate !== undefined && settings?.irpf_rate !== null) {
+    setIrpfRateInput(String(settings.irpf_rate));
+  }
+}, [settings]);
 import { format } from "date-fns";
 import NewMovementDialog from "@/components/accounting/NewMovementDialog";
 import { toast } from "sonner";

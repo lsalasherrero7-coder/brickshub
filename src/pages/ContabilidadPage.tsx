@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
+import NewMovementDialog from "@/components/accounting/NewMovementDialog";
 import { es } from "date-fns/locale";
 import {
   Plus,
@@ -63,6 +64,7 @@ export default function ContabilidadPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | AccountingMovementStatus>("all");
   const [quarterFilter, setQuarterFilter] = useState<"all" | "1" | "2" | "3" | "4">("all");
   const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
+  const [newMovementOpen, setNewMovementOpen] = useState(false);
 
   const filteredMovements = useMemo(() => {
     return movements.filter((movement: AccountingMovement) => {
@@ -158,10 +160,14 @@ export default function ContabilidadPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Control de ingresos, gastos e impuestos estimados.
           </p>
+          <NewMovementDialog
+            open={newMovementOpen}
+            onOpenChange={setNewMovementOpen}
+          />
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button>
+          <Button onClick={() => setNewMovementOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nuevo movimiento
           </Button>

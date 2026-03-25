@@ -10,6 +10,7 @@ import PropertyList from "@/pages/PropertyList";
 import PropertyForm from "@/pages/PropertyForm";
 import CalendarPage from "@/pages/CalendarPage";
 import CaptacionPage from "@/pages/CaptacionPage";
+import ContabilidadPage from "@/pages/ContabilidadPage";
 import ContactosPage from "@/pages/ContactosPage";
 import ContactDetailPage from "@/pages/ContactDetailPage";
 import MarketingLeadsPage from "@/pages/MarketingLeadsPage";

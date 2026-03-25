@@ -1,14 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export interface AccountingSettings {
+export interface AccountSettings {
   id: string;
   irpf_rate: number;
   created_at: string;
   updated_at: string;
 }
 
-export function useAccountingSettings() {
+export function useAccountSettings() {
   return useQuery({
     queryKey: ["accounting_settings"],
     queryFn: async () => {
@@ -19,12 +19,12 @@ export function useAccountingSettings() {
         .single();
 
       if (error) throw error;
-      return data as AccountingSettings;
+      return data as AccountSettings;
     },
   });
 }
 
-export function useUpdateAccountingSettings() {
+export function useUpdateAccountSettings() {
   const qc = useQueryClient();
 
   return useMutation({
@@ -46,7 +46,7 @@ export function useUpdateAccountingSettings() {
         .single();
 
       if (error) throw error;
-      return data as AccountingSettings;
+      return data as AccountSettings;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["accounting_settings"] });

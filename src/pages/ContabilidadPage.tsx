@@ -445,7 +445,11 @@ export default function ContabilidadPage() {
                   </tr>
                 ) : (
                   filteredMovements.map((movement) => (
-                    <tr key={movement.id} className="border-b last:border-0">
+                    <tr
+                      key={movement.id}
+                      className="border-b last:border-0 cursor-pointer hover:bg-muted/50"
+                      onClick={() => setEditingMovement(movement)}
+                    >
                       <td className="px-3 py-3">
                         {format(new Date(movement.movement_date), "dd MMM yyyy", {
                           locale: es,

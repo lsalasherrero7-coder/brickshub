@@ -28,7 +28,6 @@ import {
   useAccountSettings,
   useUpdateAccountingSettings,
 } from "@/hooks/useAccountSettings";
-import NewMovementDialog from "@/components/accounting/NewMovementDialog";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-ES", {
@@ -72,7 +71,6 @@ export default function ContabilidadPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | AccountingMovementStatus>("all");
   const [quarterFilter, setQuarterFilter] = useState<"all" | "1" | "2" | "3" | "4">("all");
   const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
-  const [newMovementOpen, setNewMovementOpen] = useState(false);
   const [irpfRateInput, setIrpfRateInput] = useState("20");
 
   useEffect(() => {
@@ -179,7 +177,7 @@ export default function ContabilidadPage() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button onClick={() => setNewMovementOpen(true)}>
+          <Button disabled>
             <Plus className="mr-2 h-4 w-4" />
             Nuevo movimiento
           </Button>
@@ -492,17 +490,6 @@ export default function ContabilidadPage() {
           </div>
         </CardContent>
       </Card>
-
-      <NewMovementDialog
-  open={newMovementOpen || !!editingMovement}
-  onOpenChange={(open) => {
-    if (!open) {
-      setNewMovementOpen(false);
-      setEditingMovement(null);
-    }
-  }}
-  editingMovement={editingMovement}
-/>
     </div>
   );
 }

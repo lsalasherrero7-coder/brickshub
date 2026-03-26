@@ -129,7 +129,6 @@ export default function ContabilidadPage() {
     const estimatedIrpfBase = incomeBase - deductibleExpenses;
     const irpfRate = Number(irpfRateInput || 0) / 100;
     const estimatedIrpf = estimatedIrpfBase > 0 ? estimatedIrpfBase * irpfRate : 0;
-    const netAfterIrpf = netProfit - estimatedIrpf;
 
     return {
       incomeBase,
@@ -139,7 +138,6 @@ export default function ContabilidadPage() {
       vatResult,
       netProfit,
       estimatedIrpf,
-      netAfterIrpf,
       movementsCount: filteredMovements.length,
     };
   }, [filteredMovements, irpfRateInput]);
@@ -194,62 +192,6 @@ export default function ContabilidadPage() {
           </Button>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuración fiscal</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">IRPF estimado (%)</p>
-              <p className="text-xs text-muted-foreground">
-                Este porcentaje se usa solo para previsión financiera interna.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={irpfRateInput}
-                onChange={(e) => setIrpfRateInput(e.target.value)}
-                className="w-28"
-              />
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  if (!settings?.id) {
-                    toast.error("No se ha encontrado la configuración fiscal");
-                    return;
-                  }
-
-                  const numericValue = Number(irpfRateInput);
-
-                  if (Number.isNaN(numericValue) || numericValue < 0) {
-                    toast.error("Introduce un porcentaje válido");
-                    return;
-                  }
-
-                  try {
-                    await updateSettings.mutateAsync({
-                      id: settings.id,
-                      irpf_rate: numericValue,
-                    });
-                    toast.success("IRPF estimado actualizado");
-                  } catch (err: any) {
-                    toast.error(err.message || "Error al guardar el IRPF estimado");
-                  }
-                }}
-                disabled={updateSettings.isPending}
-              >
-                Guardar
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -352,14 +294,51 @@ export default function ContabilidadPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Beneficio tras IRPF</CardTitle>
+            <CardTitle className="text-sm font-medium">IRPF (%)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold">
-              {formatCurrency(summary.netAfterIrpf)}
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={irpfRateInput}
+                onChange={(e) => setIrpfRateInput(e.target.value)}
+                className="w-24"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  if (!settings?.id) {
+                    toast.error("No se ha encontrado la configuración fiscal");
+                    return;
+                  }
+
+                  const numericValue = Number(irpfRateInput);
+
+                  if (Number.isNaN(numericValue) || numericValue < 0) {
+                    toast.error("Introduce un porcentaje válido");
+                    return;
+                  }
+
+                  try {
+                    await updateSettings.mutateAsync({
+                      id: settings.id,
+                      irpf_rate: numericValue,
+                    });
+                    toast.success("IRPF estimado actualizado");
+                  } catch (err: any) {
+                    toast.error(err.message || "Error al guardar el IRPF estimado");
+                  }
+                }}
+                disabled={updateSettings.isPending}
+              >
+                Guardar
+              </Button>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Beneficio neto menos IRPF estimado.
+            <p className="mt-2 text-xs text-muted-foreground">
+              % interno de previsión.
             </p>
           </CardContent>
         </Card>
@@ -496,9 +475,7 @@ export default function ContabilidadPage() {
                         {formatCurrency(Number(movement.total_amount))}
                       </td>
                       <td className="px-3 py-3">{getStatusLabel(movement.status)}</td>
-                      <td className="px-3 py-3">
-                        {movement.payment_method || "-"}
-                      </td>
+                      <td className="px-3 py-3">{movement.payment_method || "-"}</td>
                       <td className="px-3 py-3">
                         <span className="text-muted-foreground">Pendiente</span>
                       </td>

@@ -1,4 +1,3 @@
-const [editingMovement, setEditingMovement] = useState<AccountingMovement | null>(null);
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -28,6 +27,7 @@ import {
   useAccountSettings,
   useUpdateAccountingSettings,
 } from "@/hooks/useAccountSettings";
+import NewMovementDialog from "@/components/accounting/NewMovementDialog";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-ES", {
@@ -71,6 +71,7 @@ export default function ContabilidadPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | AccountingMovementStatus>("all");
   const [quarterFilter, setQuarterFilter] = useState<"all" | "1" | "2" | "3" | "4">("all");
   const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
+  const [newMovementOpen, setNewMovementOpen] = useState(false);
   const [irpfRateInput, setIrpfRateInput] = useState("20");
 
   useEffect(() => {
@@ -177,7 +178,7 @@ export default function ContabilidadPage() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button disabled>
+          <Button onClick={() => setNewMovementOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nuevo movimiento
           </Button>
@@ -443,11 +444,7 @@ export default function ContabilidadPage() {
                   </tr>
                 ) : (
                   filteredMovements.map((movement) => (
-                    <tr
-                      key={movement.id}
-                      className="border-b last:border-0 cursor-pointer hover:bg-muted/50"
-                      onClick={() => setEditingMovement(movement)}
-                    >
+                    <tr key={movement.id} className="border-b last:border-0">
                       <td className="px-3 py-3">
                         {format(new Date(movement.movement_date), "dd MMM yyyy", {
                           locale: es,
@@ -490,6 +487,11 @@ export default function ContabilidadPage() {
           </div>
         </CardContent>
       </Card>
+
+      <NewMovementDialog
+        open={newMovementOpen}
+        onOpenChange={setNewMovementOpen}
+      />
     </div>
   );
 }

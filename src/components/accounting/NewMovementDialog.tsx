@@ -1,15 +1,3 @@
-import { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-
-import {
-  useAccountingCategories,
-  useCreateAccountingMovement,
-  type AccountingMovement,
-  type AccountingMovementStatus,
-  type AccountingMovementType,
-} from "@/hooks/useAccountingData";
-
 import {
   Dialog,
   DialogContent,
@@ -18,307 +6,41 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
-type FormValues = {
-  movement_date: string;
-  type: AccountingMovementType;
-  concept: string;
-  category_code: string;
-  base_amount: string;
-  vat_rate: string;
-  payment_method: string;
-  status: AccountingMovementStatus;
-  deductible: boolean;
-  notes: string;
-};
-
-interface Props {
+type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingMovement?: AccountingMovement | null;
-}
-
-function todayString() {
-  return new Date().toISOString().split("T")[0];
-}
-
-const FALLBACK_INCOME_CATEGORIES = [
-  { code: "honorarios_venta", name: "Honorarios venta" },
-  { code: "honorarios_alquiler", name: "Honorarios alquiler" },
-  { code: "servicios_marketing", name: "Servicios marketing" },
-  { code: "servicios_adicionales", name: "Servicios adicionales" },
-  { code: "otros_ingresos", name: "Otros ingresos" },
-];
-
-const FALLBACK_EXPENSE_CATEGORIES = [
-  { code: "publicidad_marketing", name: "Publicidad y marketing" },
-  { code: "portales_inmobiliarios", name: "Portales inmobiliarios" },
-  { code: "software_suscripciones", name: "Software y suscripciones" },
-  { code: "gestoria_asesoria", name: "Gestoría y asesoría" },
-  { code: "telefonia_internet", name: "Telefonía e internet" },
-  { code: "transporte_desplazamientos", name: "Transporte y desplazamientos" },
-  { code: "material_oficina", name: "Material de oficina" },
-  { code: "formacion", name: "Formación" },
-  { code: "servicios_profesionales", name: "Servicios profesionales" },
-  { code: "otros_gastos", name: "Otros gastos" },
-];
+  editingMovement?: unknown;
+};
 
 export default function NewMovementDialog({
   open,
   onOpenChange,
   editingMovement,
 }: Props) {
-  const createMovement = useCreateAccountingMovement();
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    setValue,
-    formState: { isSubmitting },
-  } = useForm<FormValues>({
-    defaultValues: {
-      movement_date: todayString(),
-      type: "expense",
-      concept: "",
-      category_code: "",
-      base_amount: "",
-      vat_rate: "21",
-      payment_method: "transferencia",
-      status: "paid",
-      deductible: true,
-      notes: "",
-    },
-  });
-
-  const movementType = watch("type");
-
-  const {
-    data: dbCategories = [],
-    error: categoriesError,
-  } = useAccountingCategories(movementType);
-
-  const categories = useMemo(() => {
-    if (dbCategories.length > 0) {
-      return dbCategories.map((category) => ({
-        code: category.code,
-        name: category.name,
-      }));
-    }
-
-    return movementType === "income"
-      ? FALLBACK_INCOME_CATEGORIES
-      : FALLBACK_EXPENSE_CATEGORIES;
-  }, [dbCategories, movementType]);
-
-  useEffect(() => {
-    if (movementType === "income") {
-      setValue("status", "collected");
-      setValue("deductible", false);
-    } else {
-      setValue("status", "paid");
-      setValue("deductible", true);
-    }
-    setValue("category_code", "");
-  }, [movementType, setValue]);
-
-  const onSubmit = async (values: FormValues) => {
-    try {
-      await createMovement.mutateAsync({
-        movement_date: values.movement_date,
-        type: values.type,
-        concept: values.concept.trim(),
-        category_code: values.category_code,
-        base_amount: Number(values.base_amount),
-        vat_rate: Number(values.vat_rate),
-        payment_method: values.payment_method || null,
-        status: values.status,
-        deductible: values.deductible,
-        notes: values.notes.trim() || null,
-      });
-
-      toast.success("Movimiento creado correctamente");
-
-      reset({
-        movement_date: todayString(),
-        type: "expense",
-        concept: "",
-        category_code: "",
-        base_amount: "",
-        vat_rate: "21",
-        payment_method: "transferencia",
-        status: "paid",
-        deductible: true,
-        notes: "",
-      });
-
-      onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || "Error al crear el movimiento");
-    }
-  };
+  const title = editingMovement ? "Editar movimiento" : "Nuevo movimiento";
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          reset({
-            movement_date: todayString(),
-            type: "expense",
-            concept: "",
-            category_code: "",
-            base_amount: "",
-            vat_rate: "21",
-            payment_method: "transferencia",
-            status: "paid",
-            deductible: true,
-            notes: "",
-          });
-        }
-        onOpenChange(nextOpen);
-      }}
-    >
-      <DialogContent className="sm:max-w-[640px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>
-            {editingMovement ? "Nuevo movimiento" : "Nuevo movimiento"}
-          </DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium">Fecha</label>
-              <Input type="date" {...register("movement_date", { required: true })} />
-            </div>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            El formulario de movimientos se ha desactivado temporalmente para estabilizar el CRM.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            La pestaña de Contabilidad sigue operativa y volveremos a activar este modal en el siguiente paso.
+          </p>
+        </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium">Tipo</label>
-              <select
-                {...register("type", { required: true })}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="expense">Gasto</option>
-                <option value="income">Ingreso</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium">Concepto</label>
-            <Input
-              placeholder="Ej. Campaña Meta Ads marzo"
-              {...register("concept", { required: true })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium">Categoría</label>
-              <select
-                {...register("category_code", { required: true })}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Selecciona una categoría</option>
-                {categories.map((category) => (
-                  <option key={category.code} value={category.code}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-
-              {categoriesError ? (
-                <p className="mt-2 text-xs text-amber-600">
-                  No se han podido leer las categorías desde Supabase. Se está usando una lista local.
-                </p>
-              ) : null}
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">Método de pago</label>
-              <select
-                {...register("payment_method")}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="transferencia">Transferencia</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="bizum">Bizum</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <label className="mb-2 block text-sm font-medium">Base imponible</label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                {...register("base_amount", { required: true })}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">IVA (%)</label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="21"
-                {...register("vat_rate", { required: true })}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">Estado</label>
-              <select
-                {...register("status", { required: true })}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {movementType === "income" ? (
-                  <>
-                    <option value="pending">Pendiente</option>
-                    <option value="collected">Cobrado</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="pending">Pendiente</option>
-                    <option value="paid">Pagado</option>
-                  </>
-                )}
-              </select>
-            </div>
-          </div>
-
-          {movementType === "expense" && (
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" {...register("deductible")} />
-              Gasto deducible
-            </label>
-          )}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium">Notas</label>
-            <textarea
-              {...register("notes")}
-              placeholder="Observaciones internas..."
-              className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting || createMovement.isPending}>
-              Guardar movimiento
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cerrar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

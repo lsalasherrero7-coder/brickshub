@@ -317,3 +317,30 @@ export async function getAccountingDocumentSignedUrl(filePath: string) {
   if (error) throw error;
   return data.signedUrl;
 }
+
+export function useUpdateMovement() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<AccountingMovement>;
+    }) => {
+      const { data, error } = await supabase
+        .from("accounting_movements")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["accounting_movements"] });
+    },
+  });
+}

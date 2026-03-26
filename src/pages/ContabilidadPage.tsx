@@ -1,3 +1,4 @@
+const [editingMovement, setEditingMovement] = useState<AccountingMovement | null>(null);
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";

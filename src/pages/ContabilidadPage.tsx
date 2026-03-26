@@ -494,9 +494,15 @@ export default function ContabilidadPage() {
       </Card>
 
       <NewMovementDialog
-        open={newMovementOpen}
-        onOpenChange={setNewMovementOpen}
-      />
+  open={newMovementOpen || !!editingMovement}
+  onOpenChange={(open) => {
+    if (!open) {
+      setNewMovementOpen(false);
+      setEditingMovement(null);
+    }
+  }}
+  editingMovement={editingMovement}
+/>
     </div>
   );
 }
